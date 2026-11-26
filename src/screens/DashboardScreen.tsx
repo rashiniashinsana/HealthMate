@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -12,6 +13,7 @@ import {
   Share,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,13 +21,14 @@ import { MetricCard } from '../components/MetricCard';
 import { serializeRecords } from '../database/healthRepository';
 import { useHealth } from '../hooks/useHealth';
 import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
+import { UserGoals } from '../types/goals';
 import {
   CARD_SHADOW,
   COLORS,
-  DAILY_GOALS,
   QUICK_WATER_INCREMENT_ML,
   RADII,
   SPACING,
+  VALIDATION_LIMITS,
 } from '../utils/constants';
 import {
   formatFriendlyDate,
@@ -46,16 +49,105 @@ export const DashboardScreen: React.FC = () => {
     records,
     todaySummary,
     weeklyStats,
+    goals,
     isLoading,
     error,
     refreshData,
     quickAddWater,
+    updateGoals,
     clearAllData,
     resetToDummyData,
     clearError,
   } = useHealth();
 
   const [exporting, setExporting] = useState(false);
+  const [goalsModalVisible, setGoalsModalVisible] = useState(false);
+  const [goalInputs, setGoalInputs] = useState({
+    stepGoal: String(goals.stepGoal),
+    calorieGoal: String(goals.calorieGoal),
+    waterGoal: String(goals.waterGoal),
+  });
+  const [goalErrors, setGoalErrors] = useState<
+    Partial<Record<keyof UserGoals, string>>
+  >({});
+
+  const openGoalsModal = useCallback(() => {
+    setGoalInputs({
+      stepGoal: String(goals.stepGoal),
+      calorieGoal: String(goals.calorieGoal),
+      waterGoal: String(goals.waterGoal),
+    });
+    setGoalErrors({});
+    setGoalsModalVisible(true);
+  }, [goals]);
+
+  const handleSaveGoals = useCallback(async () => {
+    const nextErrors: Partial<Record<keyof UserGoals, string>> = {};
+
+    const validateGoalField = (
+      raw: string,
+      label: string,
+      max: number
+    ): number | null => {
+      const trimmed = raw.trim();
+      if (!trimmed || !/^\d+$/.test(trimmed)) {
+        return null;
+      }
+      const num = Number(trimmed);
+      if (!Number.isSafeInteger(num) || num <= 0 || num > max) {
+        return null;
+      }
+      return num;
+    };
+
+    const parsedSteps = validateGoalField(
+      goalInputs.stepGoal,
+      'Step goal',
+      VALIDATION_LIMITS.MAX_STEPS
+    );
+    if (parsedSteps === null) {
+      nextErrors.stepGoal = `Enter a whole number (1–${VALIDATION_LIMITS.MAX_STEPS.toLocaleString()}).`;
+    }
+
+    const parsedCalories = validateGoalField(
+      goalInputs.calorieGoal,
+      'Calorie goal',
+      VALIDATION_LIMITS.MAX_CALORIES
+    );
+    if (parsedCalories === null) {
+      nextErrors.calorieGoal = `Enter a whole number (1–${VALIDATION_LIMITS.MAX_CALORIES.toLocaleString()}).`;
+    }
+
+    const parsedWater = validateGoalField(
+      goalInputs.waterGoal,
+      'Water goal',
+      VALIDATION_LIMITS.MAX_WATER_ML
+    );
+    if (parsedWater === null) {
+      nextErrors.waterGoal = `Enter a whole number (1–${VALIDATION_LIMITS.MAX_WATER_ML.toLocaleString()}).`;
+    }
+
+    setGoalErrors(nextErrors);
+    if (
+      Object.keys(nextErrors).length > 0 ||
+      parsedSteps === null ||
+      parsedCalories === null ||
+      parsedWater === null
+    ) {
+      return;
+    }
+
+    try {
+      await updateGoals({
+        stepGoal: parsedSteps,
+        calorieGoal: parsedCalories,
+        waterGoal: parsedWater,
+      });
+      setGoalsModalVisible(false);
+    } catch {
+      // Error banner is driven by HealthContext.
+    }
+  }, [goalInputs, updateGoals]);
 
   const handleQuickWater = useCallback(async () => {
     try {
@@ -166,11 +258,28 @@ export const DashboardScreen: React.FC = () => {
             <Text style={styles.greetingLabel}>Daily Wellness Overview</Text>
             <Text style={styles.todayHeading}>Today – {todayFormatted}</Text>
           </View>
-          <View style={styles.entryBadge}>
-            <Text style={styles.entryBadgeText}>
-              {todaySummary.recordCount}{' '}
-              {todaySummary.recordCount === 1 ? 'entry' : 'entries'}
-            </Text>
+          <View style={styles.headerActions}>
+            <View style={styles.entryBadge}>
+              <Text style={styles.entryBadgeText}>
+                {todaySummary.recordCount}{' '}
+                {todaySummary.recordCount === 1 ? 'entry' : 'entries'}
+              </Text>
+            </View>
+            <Pressable
+              onPress={openGoalsModal}
+              style={({ pressed }) => [
+                styles.editGoalsBtn,
+                pressed && styles.pressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Edit Daily Goals"
+            >
+              <MaterialCommunityIcons
+                name="tune-variant"
+                size={18}
+                color={COLORS.textOnPrimary}
+              />
+            </Pressable>
           </View>
         </View>
 
@@ -196,7 +305,7 @@ export const DashboardScreen: React.FC = () => {
               <MetricCard
                 title="Steps Walked"
                 value={todaySummary.totalSteps}
-                goal={DAILY_GOALS.STEPS}
+                goal={goals.stepGoal}
                 unit="steps"
                 iconName="walk"
                 accentColor={COLORS.steps}
@@ -206,7 +315,7 @@ export const DashboardScreen: React.FC = () => {
               <MetricCard
                 title="Calories Burned"
                 value={todaySummary.totalCalories}
-                goal={DAILY_GOALS.CALORIES}
+                goal={goals.calorieGoal}
                 unit="kcal"
                 iconName="fire"
                 accentColor={COLORS.calories}
@@ -216,7 +325,7 @@ export const DashboardScreen: React.FC = () => {
               <MetricCard
                 title="Water Intake"
                 value={todaySummary.totalWater}
-                goal={DAILY_GOALS.WATER_ML}
+                goal={goals.waterGoal}
                 unit="ml"
                 iconName="water-outline"
                 accentColor={COLORS.water}
@@ -455,6 +564,95 @@ export const DashboardScreen: React.FC = () => {
           color={COLORS.textOnPrimary}
         />
       </Pressable>
+
+      <Modal
+        visible={goalsModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setGoalsModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Edit Daily Goals</Text>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalLabel}>Steps Target</Text>
+              <TextInput
+                style={[
+                  styles.modalInput,
+                  goalErrors.stepGoal ? styles.modalInputError : undefined,
+                ]}
+                value={goalInputs.stepGoal}
+                onChangeText={(text) =>
+                  setGoalInputs((prev) => ({ ...prev, stepGoal: text }))
+                }
+                keyboardType="number-pad"
+                maxLength={6}
+              />
+              {goalErrors.stepGoal ? (
+                <Text style={styles.modalErrorText}>{goalErrors.stepGoal}</Text>
+              ) : null}
+            </View>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalLabel}>Calories Target (kcal)</Text>
+              <TextInput
+                style={[
+                  styles.modalInput,
+                  goalErrors.calorieGoal ? styles.modalInputError : undefined,
+                ]}
+                value={goalInputs.calorieGoal}
+                onChangeText={(text) =>
+                  setGoalInputs((prev) => ({ ...prev, calorieGoal: text }))
+                }
+                keyboardType="number-pad"
+                maxLength={5}
+              />
+              {goalErrors.calorieGoal ? (
+                <Text style={styles.modalErrorText}>
+                  {goalErrors.calorieGoal}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalLabel}>Water Target (ml)</Text>
+              <TextInput
+                style={[
+                  styles.modalInput,
+                  goalErrors.waterGoal ? styles.modalInputError : undefined,
+                ]}
+                value={goalInputs.waterGoal}
+                onChangeText={(text) =>
+                  setGoalInputs((prev) => ({ ...prev, waterGoal: text }))
+                }
+                keyboardType="number-pad"
+                maxLength={5}
+              />
+              {goalErrors.waterGoal ? (
+                <Text style={styles.modalErrorText}>
+                  {goalErrors.waterGoal}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.modalButtons}>
+              <Pressable
+                onPress={() => setGoalsModalVisible(false)}
+                style={[styles.modalBtn, styles.modalCancelBtn]}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSaveGoals}
+                style={[styles.modalBtn, styles.modalSaveBtn]}
+              >
+                <Text style={styles.modalSaveText}>Save Goals</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -499,6 +697,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     borderRadius: RADII.full,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  editGoalsBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: RADII.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   entryBadgeText: {
     fontSize: 12,
@@ -695,5 +906,82 @@ const styles = StyleSheet.create({
   fabPressed: {
     transform: [{ scale: 0.96 }],
     opacity: 0.9,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADII.lg,
+    padding: SPACING.xl,
+    gap: SPACING.md,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  modalField: {
+    gap: SPACING.xs,
+  },
+  modalLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  modalInput: {
+    height: 44,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: RADII.md,
+    paddingHorizontal: SPACING.md,
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    backgroundColor: COLORS.surfaceMuted,
+  },
+  modalInputError: {
+    borderColor: COLORS.error,
+  },
+  modalErrorText: {
+    fontSize: 12,
+    color: COLORS.error,
+    fontWeight: '600',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginTop: SPACING.sm,
+  },
+  modalBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: RADII.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelBtn: {
+    backgroundColor: COLORS.surfaceMuted,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalCancelText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  modalSaveBtn: {
+    backgroundColor: COLORS.primary,
+  },
+  modalSaveText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textOnPrimary,
   },
 });

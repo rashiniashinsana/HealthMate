@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CARD_SHADOW, COLORS, RADII, SPACING } from '../utils/constants';
-import { ProgressBar } from './ProgressBar';
+import { GoalProgressBar } from './GoalProgressBar';
 
 export interface MetricCardProps {
   title: string;
@@ -92,7 +92,13 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         ) : null}
       </View>
 
-      <ProgressBar progress={ratio} color={accentColor} trackColor={accentBg} />
+      <GoalProgressBar
+        current={value}
+        target={goal}
+        unit={unit}
+        color={accentColor}
+        trackColor={accentBg}
+      />
     </View>
   );
 };

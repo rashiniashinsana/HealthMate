@@ -25,9 +25,11 @@ import {
   DailySummary as ExtendedDailySummary,
   WeeklyStats,
 } from '../models/HealthRecord';
+import { DEFAULT_USER_GOALS, UserGoals } from '../types/goals';
 import { HealthRecord, NewHealthRecordInput } from '../types/health';
 import { QUICK_WATER_INCREMENT_ML } from '../utils/constants';
 import { getTodayISO } from '../utils/dateUtils';
+import { getStoredGoals, saveStoredGoals } from '../utils/goalStorage';
 import {
   hasValidationErrors,
   validateHealthForm,
@@ -37,6 +39,7 @@ export interface HealthContextValue {
   records: HealthRecord[];
   todaySummary: ExtendedDailySummary;
   weeklyStats: WeeklyStats;
+  goals: UserGoals;
   isInitialized: boolean;
   isLoading: boolean;
   error: string | null;
@@ -46,6 +49,7 @@ export interface HealthContextValue {
   updateEntry: (id: number, record: NewHealthRecordInput) => Promise<void>;
   deleteEntry: (id: number) => Promise<void>;
   quickAddWater: (ml?: number) => Promise<void>;
+  updateGoals: (newGoals: UserGoals) => Promise<void>;
   setDateFilter: (date: string | null) => Promise<void>;
   resetToDummyData: () => Promise<void>;
   clearAllData: () => Promise<void>;
@@ -95,6 +99,7 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
     useState<ExtendedDailySummary>(DEFAULT_SUMMARY);
   const [weeklyStats, setWeeklyStats] =
     useState<WeeklyStats>(DEFAULT_WEEKLY_STATS);
+  const [goals, setGoals] = useState<UserGoals>(DEFAULT_USER_GOALS);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,8 +126,12 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         setIsLoading(true);
         setError(null);
-        await initDatabase();
+        const [, storedGoals] = await Promise.all([
+          initDatabase(),
+          getStoredGoals(),
+        ]);
         if (mounted) {
+          setGoals(storedGoals);
           await loadSnapshot(null);
         }
       } catch (err) {
@@ -282,6 +291,19 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [loadSnapshot]);
 
+  const updateGoals = useCallback(async (newGoals: UserGoals) => {
+    try {
+      setError(null);
+      await saveStoredGoals(newGoals);
+      setGoals(newGoals);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to save user goals.';
+      setError(message);
+      throw err;
+    }
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -291,6 +313,7 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
       records,
       todaySummary,
       weeklyStats,
+      goals,
       isInitialized,
       isLoading,
       error,
@@ -300,6 +323,7 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
       updateEntry,
       deleteEntry,
       quickAddWater,
+      updateGoals,
       setDateFilter,
       resetToDummyData,
       clearAllData,
@@ -309,6 +333,7 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
       records,
       todaySummary,
       weeklyStats,
+      goals,
       isInitialized,
       isLoading,
       error,
@@ -318,6 +343,7 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
       updateEntry,
       deleteEntry,
       quickAddWater,
+      updateGoals,
       setDateFilter,
       resetToDummyData,
       clearAllData,
