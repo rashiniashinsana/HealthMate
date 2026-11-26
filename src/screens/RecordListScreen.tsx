@@ -4,6 +4,7 @@ import { CompositeNavigationProp, useNavigation } from '@react-navigation/native
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -25,6 +26,7 @@ import {
   getTodayISO,
   isValidISODate,
 } from '../utils/dateUtils';
+import { exportHealthRecordsToCsv } from '../utils/exportCsv';
 import { showConfirm } from '../utils/platformAlert';
 
 type RecordListNavProp = CompositeNavigationProp<
@@ -46,6 +48,16 @@ export const RecordListScreen: React.FC = () => {
 
   const [dateQuery, setDateQuery] = useState<string>(dateFilter ?? '');
   const [filterError, setFilterError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState<boolean>(false);
+
+  const handleExportCsv = useCallback(async () => {
+    try {
+      setExporting(true);
+      await exportHealthRecordsToCsv();
+    } finally {
+      setExporting(false);
+    }
+  }, []);
 
   const handleApplyFilter = useCallback(async () => {
     const trimmed = dateQuery.trim();
@@ -227,6 +239,31 @@ export const RecordListScreen: React.FC = () => {
               <Text style={styles.clearFilterText}>Clear Filter</Text>
             </Pressable>
           ) : null}
+
+          <Pressable
+            onPress={handleExportCsv}
+            disabled={exporting}
+            style={({ pressed }) => [
+              styles.exportPill,
+              exporting && styles.exportPillDisabled,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Export health records to CSV"
+          >
+            {exporting ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <MaterialCommunityIcons
+                name="file-export-outline"
+                size={15}
+                color={COLORS.primary}
+              />
+            )}
+            <Text style={styles.exportPillText}>
+              {exporting ? 'Exporting…' : 'Export Data'}
+            </Text>
+          </Pressable>
         </View>
       </View>
 
@@ -403,6 +440,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: COLORS.error,
+  },
+  exportPill: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 6,
+    borderRadius: RADII.full,
+    backgroundColor: COLORS.primaryLight,
+  },
+  exportPillDisabled: {
+    opacity: 0.65,
+  },
+  exportPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
   activeFilterBanner: {
     backgroundColor: COLORS.primaryLight,
