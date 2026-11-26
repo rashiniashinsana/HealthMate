@@ -1,6 +1,8 @@
 node_modules/
 .expo/
 dist/
+dist-web/
+web-build/
 npm-debug.*
 *.jks
 *.p8
@@ -8,5 +10,9 @@ npm-debug.*
 *.key
 *.mobileprovision
 *.orig.*
-web-build/
+*.db
+*.db-wal
+*.db-shm
+*.csv
+.env*.local
 .DS_Store
