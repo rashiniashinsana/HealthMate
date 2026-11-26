@@ -2,7 +2,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../constants/theme';
 import { AddEditRecordScreen } from '../screens/AddEditRecordScreen';
@@ -31,7 +30,7 @@ const MainTabs: React.FC = () => {
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerStyle: {
           backgroundColor: COLORS.surface,
         },
@@ -41,69 +40,76 @@ const MainTabs: React.FC = () => {
           color: COLORS.textPrimary,
         },
         headerShadowVisible: false,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textMuted,
+        tabBarActiveTintColor: Theme.colors.water.primary,
+        tabBarInactiveTintColor: Theme.colors.neutral.textSecondary,
+        tabBarActiveBackgroundColor: COLORS.primaryLight,
+        tabBarItemStyle: {
+          borderRadius: RADII.md,
+          marginHorizontal: 6,
+          marginVertical: 4,
+        },
         // Account for iOS home indicator / Android gesture bar height.
         tabBarStyle: {
           backgroundColor: COLORS.surface,
           borderTopColor: COLORS.border,
           borderTopWidth: 1,
-          height: 58 + bottomPadding,
+          height: 62 + bottomPadding,
           paddingBottom: bottomPadding,
-          paddingTop: 6,
+          paddingTop: 4,
           elevation: 8,
         },
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
         },
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof MaterialCommunityIcons.glyphMap =
-            Theme.icons.dashboard;
-
-          if (route.name === 'Dashboard') {
-            iconName = focused
-              ? Theme.icons.dashboardActive
-              : Theme.icons.dashboard;
-          } else if (route.name === 'Records') {
-            iconName = focused
-              ? Theme.icons.recordsActive
-              : Theme.icons.records;
-          } else {
-            iconName = focused ? Theme.icons.add : 'plus-circle-outline';
-          }
-
-          return (
-            <View
-              style={[
-                styles.iconPill,
-                focused && styles.iconPillActive,
-              ]}
-            >
-              <MaterialCommunityIcons
-                name={iconName}
-                size={size - 1}
-                color={color}
-              />
-            </View>
-          );
-        },
-      })}
+      }}
     >
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={{ title: 'HealthMate' }}
+        options={{
+          title: 'HealthMate',
+          tabBarLabel: 'Dashboard',
+          tabBarIcon: ({ focused, color, size }) => (
+            <MaterialCommunityIcons
+              name={
+                focused ? Theme.icons.dashboardActive : Theme.icons.dashboard
+              }
+              size={size ?? 24}
+              color={color}
+            />
+          ),
+        }}
       />
       <Tab.Screen
         name="Records"
         component={RecordListScreen}
-        options={{ title: 'Records' }}
+        options={{
+          title: 'Records',
+          tabBarLabel: 'Records',
+          tabBarIcon: ({ focused, color, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? Theme.icons.recordsActive : Theme.icons.records}
+              size={size ?? 24}
+              color={color}
+            />
+          ),
+        }}
       />
       <Tab.Screen
         name="AddRecord"
         component={AddEditRecordScreen}
-        options={{ title: 'Add Log' }}
+        options={{
+          title: 'Add Log',
+          tabBarLabel: 'Add Log',
+          tabBarIcon: ({ focused, color, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? Theme.icons.add : 'plus-circle-outline'}
+              size={size ?? 24}
+              color={color}
+            />
+          ),
+        }}
       />
     </Tab.Navigator>
   );
@@ -142,14 +148,3 @@ export const AppNavigator: React.FC = () => {
     </Stack.Navigator>
   );
 };
-
-const styles = StyleSheet.create({
-  iconPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 3,
-    borderRadius: RADII.xl,
-  },
-  iconPillActive: {
-    backgroundColor: COLORS.primaryLight,
-  },
-});

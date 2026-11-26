@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -11,8 +12,9 @@ import { COLORS, RADII, SPACING } from './src/utils/constants';
 
 const AppContent: React.FC = () => {
   const { isInitialized } = useHealth();
+  const [fontsLoaded, fontError] = useFonts(MaterialCommunityIcons.font);
 
-  if (!isInitialized) {
+  if (!isInitialized || (!fontsLoaded && !fontError)) {
     return (
       <View style={styles.splashContainer}>
         <View style={styles.splashIcon}>
@@ -75,7 +77,7 @@ const styles = StyleSheet.create({
   },
   splashSubtitle: {
     fontSize: 14,
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
     marginTop: SPACING.xs,
   },
   spinner: {

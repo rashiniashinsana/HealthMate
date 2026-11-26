@@ -48,6 +48,7 @@ export const Theme = {
     calendar: 'calendar-month-outline',
     export: 'file-export-outline',
     calculator: 'calculator-variant-outline',
+    goals: 'target',
     settings: 'cog-outline',
   },
 } as const;

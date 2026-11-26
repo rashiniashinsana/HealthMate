@@ -285,9 +285,9 @@ export const DashboardScreen: React.FC = () => {
               accessibilityLabel="Edit Daily Goals"
             >
               <MaterialCommunityIcons
-                name={Theme.icons.settings}
+                name={Theme.icons.goals}
                 size={20}
-                color={COLORS.textSecondary}
+                color={COLORS.primary}
               />
             </Pressable>
           </View>
