@@ -19,6 +19,7 @@ import {
 import { BmiCalculatorModal } from '../components/BmiCalculatorModal';
 import { MetricCard } from '../components/MetricCard';
 import { WeeklyTrendChart } from '../components/WeeklyTrendChart';
+import { Theme } from '../constants/theme';
 import { serializeRecords } from '../database/healthRepository';
 import { useHealth } from '../hooks/useHealth';
 import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
@@ -268,7 +269,7 @@ export const DashboardScreen: React.FC = () => {
               accessibilityLabel="Open BMI and Baseline Calculator"
             >
               <MaterialCommunityIcons
-                name="calculator-variant-outline"
+                name={Theme.icons.calculator}
                 size={20}
                 color={COLORS.primary}
               />
@@ -284,7 +285,7 @@ export const DashboardScreen: React.FC = () => {
               accessibilityLabel="Edit Daily Goals"
             >
               <MaterialCommunityIcons
-                name="cog-outline"
+                name={Theme.icons.settings}
                 size={20}
                 color={COLORS.textSecondary}
               />
@@ -317,7 +318,7 @@ export const DashboardScreen: React.FC = () => {
                 value={todaySummary.totalSteps}
                 goal={goals.stepGoal}
                 unit="steps"
-                iconName="walk"
+                iconName={Theme.icons.steps}
                 accentColor={COLORS.steps}
                 accentBg={COLORS.stepsBg}
                 badgeTextColor={COLORS.stepsBadge}
@@ -328,7 +329,7 @@ export const DashboardScreen: React.FC = () => {
                 value={todaySummary.totalCalories}
                 goal={goals.calorieGoal}
                 unit="kcal"
-                iconName="fire"
+                iconName={Theme.icons.calories}
                 accentColor={COLORS.calories}
                 accentBg={COLORS.caloriesBg}
                 badgeTextColor={COLORS.caloriesBadge}
@@ -339,12 +340,12 @@ export const DashboardScreen: React.FC = () => {
                 value={todaySummary.totalWater}
                 goal={goals.waterGoal}
                 unit="ml"
-                iconName="water-outline"
+                iconName={Theme.icons.water}
                 accentColor={COLORS.water}
                 accentBg={COLORS.waterBg}
                 badgeTextColor={COLORS.waterBadge}
                 quickActionLabel="+250 ml"
-                quickActionIcon="water-plus"
+                quickActionIcon={Theme.icons.waterPlus}
                 onQuickAction={handleQuickWater}
               />
             </View>

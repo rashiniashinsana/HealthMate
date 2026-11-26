@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { EmptyState } from '../components/EmptyState';
 import { RecordCard } from '../components/RecordCard';
+import { Theme } from '../constants/theme';
 import { useHealth } from '../hooks/useHealth';
 import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
 import { HealthRecord } from '../types/health';
@@ -131,7 +132,7 @@ export const RecordListScreen: React.FC = () => {
             ]}
           >
             <MaterialCommunityIcons
-              name="calendar-search"
+              name={Theme.icons.search}
               size={20}
               color={COLORS.primary}
             />
@@ -155,7 +156,7 @@ export const RecordListScreen: React.FC = () => {
             {dateQuery.length > 0 ? (
               <Pressable onPress={handleClearFilter} hitSlop={8}>
                 <MaterialCommunityIcons
-                  name="close-circle"
+                  name={Theme.icons.clear}
                   size={18}
                   color={COLORS.textMuted}
                 />
@@ -239,7 +240,7 @@ export const RecordListScreen: React.FC = () => {
               <ActivityIndicator size="small" color={COLORS.primaryDark} />
             ) : (
               <MaterialCommunityIcons
-                name="file-export-outline"
+                name={Theme.icons.export}
                 size={15}
                 color={COLORS.primaryDark}
               />

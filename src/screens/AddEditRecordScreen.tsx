@@ -20,6 +20,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Theme } from '../constants/theme';
 import { useHealth } from '../hooks/useHealth';
 import { HealthFormErrors, HealthFormValues } from '../models/HealthRecord';
 import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
@@ -157,7 +158,7 @@ export const AddEditRecordScreen: React.FC = () => {
             <Text style={styles.label}>Date (YYYY-MM-DD)</Text>
             <View style={getInputBoxStyle('date')}>
               <MaterialCommunityIcons
-                name="calendar-outline"
+                name={Theme.icons.calendar}
                 size={20}
                 color={COLORS.primary}
               />
@@ -227,7 +228,7 @@ export const AddEditRecordScreen: React.FC = () => {
             <Text style={styles.label}>Steps Walked</Text>
             <View style={getInputBoxStyle('steps')}>
               <MaterialCommunityIcons
-                name="shoe-print"
+                name={Theme.icons.stepsShoe}
                 size={20}
                 color={COLORS.steps}
               />
@@ -263,7 +264,7 @@ export const AddEditRecordScreen: React.FC = () => {
             <Text style={styles.label}>Calories Burned</Text>
             <View style={getInputBoxStyle('calories')}>
               <MaterialCommunityIcons
-                name="fire"
+                name={Theme.icons.calories}
                 size={20}
                 color={COLORS.calories}
               />
@@ -299,7 +300,7 @@ export const AddEditRecordScreen: React.FC = () => {
             <Text style={styles.label}>Water Intake (ml)</Text>
             <View style={getInputBoxStyle('water')}>
               <MaterialCommunityIcons
-                name="water-outline"
+                name={Theme.icons.water}
                 size={20}
                 color={COLORS.water}
               />

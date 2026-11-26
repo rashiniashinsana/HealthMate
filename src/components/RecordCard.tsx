@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Theme } from '../constants/theme';
 import { HealthRecord } from '../types/health';
 import { CARD_SHADOW, COLORS, RADII, SPACING } from '../utils/constants';
 import { formatDisplayDate, formatFriendlyDate } from '../utils/dateUtils';
@@ -41,7 +42,7 @@ export const RecordCard: React.FC<RecordCardProps> = ({
               accessibilityLabel={`Edit record for ${record.date}`}
             >
               <MaterialCommunityIcons
-                name="pencil-outline"
+                name={Theme.icons.edit}
                 size={18}
                 color={COLORS.primaryDark}
               />
@@ -58,7 +59,7 @@ export const RecordCard: React.FC<RecordCardProps> = ({
               accessibilityLabel={`Delete record for ${record.date}`}
             >
               <MaterialCommunityIcons
-                name="trash-can-outline"
+                name={Theme.icons.delete}
                 size={18}
                 color={COLORS.error}
               />
@@ -69,7 +70,7 @@ export const RecordCard: React.FC<RecordCardProps> = ({
         <View style={styles.metricsRow}>
           <View style={[styles.metricPill, { backgroundColor: COLORS.stepsBg }]}>
             <MaterialCommunityIcons
-              name="walk"
+              name={Theme.icons.steps}
               size={16}
               color={COLORS.steps}
             />
@@ -85,7 +86,7 @@ export const RecordCard: React.FC<RecordCardProps> = ({
             style={[styles.metricPill, { backgroundColor: COLORS.caloriesBg }]}
           >
             <MaterialCommunityIcons
-              name="fire"
+              name={Theme.icons.calories}
               size={16}
               color={COLORS.calories}
             />
@@ -101,7 +102,7 @@ export const RecordCard: React.FC<RecordCardProps> = ({
 
           <View style={[styles.metricPill, { backgroundColor: COLORS.waterBg }]}>
             <MaterialCommunityIcons
-              name="water-outline"
+              name={Theme.icons.water}
               size={16}
               color={COLORS.water}
             />

@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Theme } from '../constants/theme';
 import { AddEditRecordScreen } from '../screens/AddEditRecordScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { RecordListScreen } from '../screens/RecordListScreen';
@@ -58,14 +59,18 @@ const MainTabs: React.FC = () => {
         },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof MaterialCommunityIcons.glyphMap =
-            'view-dashboard-outline';
+            Theme.icons.dashboard;
 
           if (route.name === 'Dashboard') {
-            iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
+            iconName = focused
+              ? Theme.icons.dashboardActive
+              : Theme.icons.dashboard;
           } else if (route.name === 'Records') {
-            iconName = focused ? 'clipboard-text' : 'clipboard-text-outline';
+            iconName = focused
+              ? Theme.icons.recordsActive
+              : Theme.icons.records;
           } else {
-            iconName = focused ? 'plus-circle' : 'plus-circle-outline';
+            iconName = focused ? Theme.icons.add : 'plus-circle-outline';
           }
 
           return (

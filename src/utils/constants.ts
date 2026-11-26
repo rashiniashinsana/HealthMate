@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { Theme } from '../constants/theme';
 
 export const DAILY_GOALS = {
   STEPS: 10000,
@@ -15,44 +16,46 @@ export const VALIDATION_LIMITS = {
 export const QUICK_WATER_INCREMENT_ML = 250;
 
 export const COLORS = {
-  // Primary & Surface Hierarchy (Material Design 3)
-  primary: '#0284C7',
-  primaryDark: '#0369A1',
-  primaryLight: '#E0F2FE',
-  background: '#F7F9FC',
-  surface: '#FFFFFF',
+  // Primary & Surface Hierarchy derived from master Theme tokens
+  primary: Theme.colors.water.primary,
+  primaryDark: Theme.colors.water.dark,
+  primaryLight: Theme.colors.water.surface,
+  background: Theme.colors.neutral.canvas,
+  surface: Theme.colors.neutral.card,
   surfaceMuted: '#F1F5F9',
-  border: '#EDF2F7',
+  border: Theme.colors.neutral.borderSubtle,
 
   // Typography
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
+  textPrimary: Theme.colors.neutral.textPrimary,
+  textSecondary: Theme.colors.neutral.textSecondary,
   textMuted: '#94A3B8',
   textOnPrimary: '#FFFFFF',
 
   // Semantic Metric Accents
-  steps: '#16A34A',
-  stepsBg: '#DCFCE7',
-  stepsBadge: '#15803D',
+  steps: Theme.colors.steps.primary,
+  stepsBg: Theme.colors.steps.surface,
+  stepsBorder: Theme.colors.steps.border,
+  stepsBadge: Theme.colors.steps.dark,
 
-  calories: '#EA580C',
-  caloriesBg: '#FFEDD5',
-  caloriesBadge: '#C2410C',
+  calories: Theme.colors.calories.primary,
+  caloriesBg: Theme.colors.calories.surface,
+  caloriesBorder: Theme.colors.calories.border,
+  caloriesBadge: Theme.colors.calories.dark,
 
-  water: '#0284C7',
-  waterBg: '#E0F2FE',
-  waterBadge: '#0369A1',
+  water: Theme.colors.water.primary,
+  waterBg: Theme.colors.water.surface,
+  waterBorder: Theme.colors.water.border,
+  waterBadge: Theme.colors.water.dark,
 
   // Semantic States
-  success: '#16A34A',
-  successBg: '#DCFCE7',
+  success: Theme.colors.steps.primary,
+  successBg: Theme.colors.steps.surface,
   warning: '#D97706',
   warningBg: '#FEF3C7',
-  error: '#DC2626',
+  error: Theme.colors.neutral.danger,
   errorBg: '#FEE2E2',
 } as const;
 
-// 8-point spacing grid
 export const SPACING = {
   xs: 4,
   sm: 8,

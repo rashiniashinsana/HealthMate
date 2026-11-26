@@ -1,61 +1,53 @@
-export const COLORS = {
-  primary: '#0D9488',
-  primaryDark: '#0F766E',
-  primarySoft: '#CCFBF1',
+export const Theme = {
+  colors: {
+    water: {
+      primary: '#1E88E5',
+      surface: '#E3F2FD',
+      border: '#90CAF9',
+      dark: '#1565C0',
+    },
+    calories: {
+      primary: '#E53935',
+      surface: '#FFEBEE',
+      border: '#FFCDD2',
+      dark: '#C62828',
+    },
+    steps: {
+      primary: '#2E7D32',
+      surface: '#E8F5E9',
+      border: '#A5D6A7',
+      dark: '#1B5E20',
+    },
+    neutral: {
+      canvas: '#F8F9FA',
+      card: '#FFFFFF',
+      textPrimary: '#0F172A',
+      textSecondary: '#64748B',
+      borderSubtle: '#E2E8F0',
+      danger: '#DC2626',
+    },
+  },
+  icons: {
+    water: 'water',
+    waterOutline: 'water-outline',
+    waterPlus: 'water-plus',
+    calories: 'fire',
+    caloriesOutline: 'fire-circle',
+    steps: 'walk',
+    stepsShoe: 'shoe-print',
 
-  background: '#F8FAFC',
-  surface: '#FFFFFF',
-  surfaceMuted: '#F1F5F9',
-
-  text: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#64748B',
-  border: '#E2E8F0',
-
-  // Metric accents
-  steps: '#0D9488',
-  stepsSoft: '#CCFBF1',
-
-  calories: '#EA580C',
-  caloriesSoft: '#FFEDD5',
-
-  water: '#0284C7',
-  waterSoft: '#E0F2FE',
-
-  // Semantic
-  success: '#16A34A',
-  successSoft: '#DCFCE7',
-  danger: '#DC2626',
-  dangerSoft: '#FEE2E2',
-  warning: '#D97706',
-  warningSoft: '#FEF3C7',
-} as const;
-
-export const SPACING = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-} as const;
-
-export const RADIUS = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  full: 9999,
-} as const;
-
-export const DAILY_GOALS = {
-  steps: 10000,
-  calories: 2500,
-  water: 2500, // ml
-} as const;
-
-export const VALIDATION_BOUNDS = {
-  maxSteps: 100000,
-  maxCalories: 20000,
-  maxWater: 10000,
+    dashboard: 'view-dashboard-outline',
+    dashboardActive: 'view-dashboard',
+    records: 'clipboard-text-outline',
+    recordsActive: 'clipboard-text',
+    add: 'plus-circle',
+    edit: 'pencil-outline',
+    delete: 'trash-can-outline',
+    search: 'magnify',
+    clear: 'close-circle',
+    calendar: 'calendar-month-outline',
+    export: 'file-export-outline',
+    calculator: 'calculator-variant-outline',
+    settings: 'cog-outline',
+  },
 } as const;
