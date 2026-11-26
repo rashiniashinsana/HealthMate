@@ -22,8 +22,8 @@ function validatePositiveInt(
   }
 
   const numeric = Number(trimmed);
-  if (!Number.isSafeInteger(numeric) || numeric <= 0) {
-    return `${label} must be greater than 0.`;
+  if (!Number.isSafeInteger(numeric) || numeric < 0) {
+    return `${label} must be a non-negative integer.`;
   }
 
   if (numeric > maxInclusive) {

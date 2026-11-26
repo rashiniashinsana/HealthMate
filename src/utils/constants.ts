@@ -8,7 +8,7 @@ export const DAILY_GOALS = {
 
 export const VALIDATION_LIMITS = {
   MAX_STEPS: 100000,
-  MAX_CALORIES: 15000,
+  MAX_CALORIES: 10000,
   MAX_WATER_ML: 10000,
 } as const;
 
@@ -19,7 +19,7 @@ export const COLORS = {
   primary: '#0F766E',
   primaryDark: '#115E59',
   primaryLight: '#E0F2F1',
-  background: '#F8F9FA',
+  background: '#F6F8FA',
   surface: '#FFFFFF',
   surfaceMuted: '#F1F5F9',
   border: '#E2E8F0',
@@ -31,11 +31,11 @@ export const COLORS = {
   textOnPrimary: '#FFFFFF',
 
   // Metric Accents
-  steps: '#4CAF50',
+  steps: '#2E7D32',
   stepsBg: '#E8F5E9',
-  calories: '#FF5722',
-  caloriesBg: '#FBE9E7',
-  water: '#2196F3',
+  calories: '#E53935',
+  caloriesBg: '#FFEBEE',
+  water: '#1E88E5',
   waterBg: '#E3F2FD',
 
   // Semantic States

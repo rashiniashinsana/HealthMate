@@ -51,7 +51,7 @@ export const DashboardScreen: React.FC = () => {
     refreshData,
     quickAddWater,
     clearAllData,
-    resetToSampleData,
+    resetToDummyData,
     clearError,
   } = useHealth();
 
@@ -116,14 +116,14 @@ export const DashboardScreen: React.FC = () => {
       'Replace current records with the default 4 sample health entries?',
       async () => {
         try {
-          await resetToSampleData();
+          await resetToDummyData();
         } catch {
           // Error surfaced by HealthContext.
         }
       },
       'Reset'
     );
-  }, [resetToSampleData]);
+  }, [resetToDummyData]);
 
   const handleClearAllData = useCallback(() => {
     showConfirm(
@@ -256,16 +256,37 @@ export const DashboardScreen: React.FC = () => {
                         </Text>
                         <Text style={styles.recentDateSub}>{item.date}</Text>
                       </View>
-                      <View style={styles.recentMetrics}>
-                        <Text
-                          style={[styles.recentValue, { color: COLORS.steps }]}
+                      <View style={styles.recentRightGroup}>
+                        <View style={styles.recentMetrics}>
+                          <Text
+                            style={[styles.recentValue, { color: COLORS.steps }]}
+                          >
+                            {item.steps.toLocaleString()} steps
+                          </Text>
+                          <Text style={styles.recentSubMetrics}>
+                            {item.calories.toLocaleString()} kcal ·{' '}
+                            {item.water.toLocaleString()} ml
+                          </Text>
+                        </View>
+                        <Pressable
+                          onPress={() =>
+                            navigation.navigate('AddEditRecord', {
+                              record: item,
+                            })
+                          }
+                          style={({ pressed }) => [
+                            styles.recentEditBtn,
+                            pressed && styles.pressed,
+                          ]}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Edit entry for ${item.date}`}
                         >
-                          {item.steps.toLocaleString()} steps
-                        </Text>
-                        <Text style={styles.recentSubMetrics}>
-                          {item.calories.toLocaleString()} kcal ·{' '}
-                          {item.water.toLocaleString()} ml
-                        </Text>
+                          <MaterialCommunityIcons
+                            name="pencil-outline"
+                            size={16}
+                            color={COLORS.primary}
+                          />
+                        </Pressable>
                       </View>
                     </View>
                   ))}
@@ -571,6 +592,19 @@ const styles = StyleSheet.create({
   },
   recentMetrics: {
     alignItems: 'flex-end',
+  },
+  recentRightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  recentEditBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: RADII.sm,
+    backgroundColor: COLORS.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   recentValue: {
     fontSize: 14,

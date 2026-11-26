@@ -38,20 +38,20 @@ export const RecordListScreen: React.FC = () => {
   const {
     records,
     isLoading,
-    selectedDateFilter,
+    dateFilter,
     refreshData,
-    filterByDate,
-    removeRecord,
+    setDateFilter,
+    deleteEntry,
   } = useHealth();
 
-  const [dateQuery, setDateQuery] = useState<string>(selectedDateFilter ?? '');
+  const [dateQuery, setDateQuery] = useState<string>(dateFilter ?? '');
   const [filterError, setFilterError] = useState<string | null>(null);
 
   const handleApplyFilter = useCallback(async () => {
     const trimmed = dateQuery.trim();
     if (!trimmed) {
       setFilterError(null);
-      await filterByDate(null);
+      await setDateFilter(null);
       return;
     }
 
@@ -61,22 +61,22 @@ export const RecordListScreen: React.FC = () => {
     }
 
     setFilterError(null);
-    await filterByDate(trimmed);
-  }, [dateQuery, filterByDate]);
+    await setDateFilter(trimmed);
+  }, [dateQuery, setDateFilter]);
 
   const handleClearFilter = useCallback(async () => {
     setDateQuery('');
     setFilterError(null);
-    await filterByDate(null);
-  }, [filterByDate]);
+    await setDateFilter(null);
+  }, [setDateFilter]);
 
   const handleQuickDate = useCallback(
     async (isoDate: string | null) => {
       setDateQuery(isoDate ?? '');
       setFilterError(null);
-      await filterByDate(isoDate);
+      await setDateFilter(isoDate);
     },
-    [filterByDate]
+    [setDateFilter]
   );
 
   const handleEdit = useCallback(
@@ -90,12 +90,12 @@ export const RecordListScreen: React.FC = () => {
     (record: HealthRecord) => {
       showConfirm(
         'Delete Health Record',
-        `Are you sure you want to delete the entry for ${formatDisplayDate(
+        `Are you sure you want to delete this record?\n(${formatDisplayDate(
           record.date
-        )} (${record.steps.toLocaleString()} steps)?`,
+        )} · ${record.steps.toLocaleString()} steps)`,
         async () => {
           try {
-            await removeRecord(record.id);
+            await deleteEntry(record.id);
           } catch {
             // Error surfaced by HealthContext.
           }
@@ -104,7 +104,7 @@ export const RecordListScreen: React.FC = () => {
         true
       );
     },
-    [removeRecord]
+    [deleteEntry]
   );
 
   const todayISO = getTodayISO();
@@ -171,15 +171,12 @@ export const RecordListScreen: React.FC = () => {
         <View style={styles.chipRow}>
           <Pressable
             onPress={() => handleQuickDate(null)}
-            style={[
-              styles.chip,
-              selectedDateFilter === null && styles.chipActive,
-            ]}
+            style={[styles.chip, dateFilter === null && styles.chipActive]}
           >
             <Text
               style={[
                 styles.chipText,
-                selectedDateFilter === null && styles.chipTextActive,
+                dateFilter === null && styles.chipTextActive,
               ]}
             >
               All
@@ -188,15 +185,12 @@ export const RecordListScreen: React.FC = () => {
 
           <Pressable
             onPress={() => handleQuickDate(todayISO)}
-            style={[
-              styles.chip,
-              selectedDateFilter === todayISO && styles.chipActive,
-            ]}
+            style={[styles.chip, dateFilter === todayISO && styles.chipActive]}
           >
             <Text
               style={[
                 styles.chipText,
-                selectedDateFilter === todayISO && styles.chipTextActive,
+                dateFilter === todayISO && styles.chipTextActive,
               ]}
             >
               Today
@@ -207,20 +201,20 @@ export const RecordListScreen: React.FC = () => {
             onPress={() => handleQuickDate(yesterdayISO)}
             style={[
               styles.chip,
-              selectedDateFilter === yesterdayISO && styles.chipActive,
+              dateFilter === yesterdayISO && styles.chipActive,
             ]}
           >
             <Text
               style={[
                 styles.chipText,
-                selectedDateFilter === yesterdayISO && styles.chipTextActive,
+                dateFilter === yesterdayISO && styles.chipTextActive,
               ]}
             >
               Yesterday
             </Text>
           </Pressable>
 
-          {selectedDateFilter !== null ? (
+          {dateFilter !== null ? (
             <Pressable
               onPress={handleClearFilter}
               style={styles.clearFilterPill}
@@ -235,6 +229,14 @@ export const RecordListScreen: React.FC = () => {
           ) : null}
         </View>
       </View>
+
+      {dateFilter ? (
+        <View style={styles.activeFilterBanner}>
+          <Text style={styles.activeFilterText}>
+            Showing records for {formatDisplayDate(dateFilter)}
+          </Text>
+        </View>
+      ) : null}
 
       <FlatList
         data={records}
@@ -263,22 +265,20 @@ export const RecordListScreen: React.FC = () => {
           isLoading ? undefined : (
             <EmptyState
               title={
-                selectedDateFilter
-                  ? 'No records for this date'
+                dateFilter
+                  ? 'No records found for this date'
                   : 'No health records yet'
               }
               description={
-                selectedDateFilter
+                dateFilter
                   ? `No entries were found for ${formatDisplayDate(
-                      selectedDateFilter
+                      dateFilter
                     )}.`
                   : 'Start tracking your daily steps, calories, and water intake.'
               }
-              actionLabel={
-                selectedDateFilter ? 'Clear Filter' : 'Log First Entry'
-              }
+              actionLabel={dateFilter ? 'Clear Filter' : 'Log First Entry'}
               onAction={
-                selectedDateFilter
+                dateFilter
                   ? handleClearFilter
                   : () => navigation.navigate('AddEditRecord')
               }
@@ -403,6 +403,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: COLORS.error,
+  },
+  activeFilterBanner: {
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  activeFilterText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   listContent: {
     padding: SPACING.lg,

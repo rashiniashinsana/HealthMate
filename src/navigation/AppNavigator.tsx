@@ -61,7 +61,7 @@ const MainTabs: React.FC = () => {
           if (route.name === 'Records') {
             return (
               <MaterialCommunityIcons
-                name={focused ? 'clipboard-list' : 'clipboard-list-outline'}
+                name={focused ? 'clipboard-text' : 'clipboard-text-outline'}
                 size={size}
                 color={color}
               />
@@ -90,7 +90,7 @@ const MainTabs: React.FC = () => {
       <Tab.Screen
         name="AddRecord"
         component={AddEditRecordScreen}
-        options={{ title: 'Add Record' }}
+        options={{ title: 'Add Log' }}
       />
     </Tab.Navigator>
   );

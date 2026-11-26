@@ -44,7 +44,7 @@ export const AddEditRecordScreen: React.FC = () => {
   const existingRecord = route.params?.record;
   const isEditing = Boolean(existingRecord);
 
-  const { addRecord, editRecord } = useHealth();
+  const { addEntry, updateEntry } = useHealth();
 
   const [values, setValues] = useState<HealthFormValues>({
     date: existingRecord?.date ?? getTodayISO(),
@@ -104,9 +104,9 @@ export const AddEditRecordScreen: React.FC = () => {
     try {
       setSubmitting(true);
       if (isEditing && existingRecord) {
-        await editRecord(existingRecord.id, payload);
+        await updateEntry(existingRecord.id, payload);
       } else {
-        await addRecord(payload);
+        await addEntry(payload);
       }
       closeOrReset();
     } catch (err) {
@@ -117,7 +117,7 @@ export const AddEditRecordScreen: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [values, isEditing, existingRecord, editRecord, addRecord, closeOrReset]);
+  }, [values, isEditing, existingRecord, updateEntry, addEntry, closeOrReset]);
 
   const todayISO = getTodayISO();
   const yesterdayISO = getOffsetDateISO(-1);
