@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "HealthMate",
+    "slug": "healthmate",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.healthmate.app"
+    },
+    "android": {
+      "package": "com.healthmate.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F766E"
+      }
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-asset",
+      "expo-font"
+    ]
+  }
+}
