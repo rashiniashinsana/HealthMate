@@ -13,7 +13,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '../components/EmptyState';
 import { RecordCard } from '../components/RecordCard';
 import { useHealth } from '../hooks/useHealth';
@@ -36,7 +35,6 @@ type RecordListNavProp = CompositeNavigationProp<
 
 export const RecordListScreen: React.FC = () => {
   const navigation = useNavigation<RecordListNavProp>();
-  const insets = useSafeAreaInsets();
   const {
     records,
     isLoading,
@@ -135,7 +133,7 @@ export const RecordListScreen: React.FC = () => {
             <MaterialCommunityIcons
               name="calendar-search"
               size={20}
-              color={COLORS.textMuted}
+              color={COLORS.primary}
             />
             <TextInput
               style={styles.input}
@@ -226,20 +224,6 @@ export const RecordListScreen: React.FC = () => {
             </Text>
           </Pressable>
 
-          {dateFilter !== null ? (
-            <Pressable
-              onPress={handleClearFilter}
-              style={styles.clearFilterPill}
-            >
-              <MaterialCommunityIcons
-                name="filter-off-outline"
-                size={14}
-                color={COLORS.error}
-              />
-              <Text style={styles.clearFilterText}>Clear Filter</Text>
-            </Pressable>
-          ) : null}
-
           <Pressable
             onPress={handleExportCsv}
             disabled={exporting}
@@ -252,12 +236,12 @@ export const RecordListScreen: React.FC = () => {
             accessibilityLabel="Export health records to CSV"
           >
             {exporting ? (
-              <ActivityIndicator size="small" color={COLORS.primary} />
+              <ActivityIndicator size="small" color={COLORS.primaryDark} />
             ) : (
               <MaterialCommunityIcons
                 name="file-export-outline"
                 size={15}
-                color={COLORS.primary}
+                color={COLORS.primaryDark}
               />
             )}
             <Text style={styles.exportPillText}>
@@ -270,18 +254,18 @@ export const RecordListScreen: React.FC = () => {
       {dateFilter ? (
         <View style={styles.activeFilterBanner}>
           <Text style={styles.activeFilterText}>
-            Showing records for {formatDisplayDate(dateFilter)}
+            Showing: {dateFilter}
           </Text>
+          <Pressable onPress={handleClearFilter} hitSlop={8}>
+            <Text style={styles.resetFilterLink}>Reset</Text>
+          </Pressable>
         </View>
       ) : null}
 
       <FlatList
         data={records}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: 96 + insets.bottom },
-        ]}
+        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
@@ -301,19 +285,13 @@ export const RecordListScreen: React.FC = () => {
         ListEmptyComponent={
           isLoading ? undefined : (
             <EmptyState
-              title={
-                dateFilter
-                  ? 'No records found for this date'
-                  : 'No health records yet'
-              }
+              title="No entries found"
               description={
                 dateFilter
-                  ? `No entries were found for ${formatDisplayDate(
-                      dateFilter
-                    )}.`
+                  ? `No health records match ${formatDisplayDate(dateFilter)}.`
                   : 'Start tracking your daily steps, calories, and water intake.'
               }
-              actionLabel={dateFilter ? 'Clear Filter' : 'Log First Entry'}
+              actionLabel={dateFilter ? 'Reset Filter' : 'Log Your First Entry'}
               onAction={
                 dateFilter
                   ? handleClearFilter
@@ -326,11 +304,7 @@ export const RecordListScreen: React.FC = () => {
 
       <Pressable
         onPress={() => navigation.navigate('AddEditRecord')}
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: SPACING.xl + insets.bottom },
-          pressed && styles.fabPressed,
-        ]}
+        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
         accessibilityRole="button"
         accessibilityLabel="Add Health Record"
       >
@@ -351,9 +325,9 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     backgroundColor: COLORS.surface,
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm + 4,
+    paddingBottom: SPACING.sm + 4,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     gap: SPACING.sm,
@@ -367,7 +341,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    backgroundColor: COLORS.surfaceMuted,
+    backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: RADII.md,
@@ -409,14 +383,11 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: SPACING.md,
     paddingVertical: 6,
-    borderRadius: RADII.full,
+    borderRadius: RADII.xl,
     backgroundColor: COLORS.surfaceMuted,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   chipActive: {
     backgroundColor: COLORS.primaryLight,
-    borderColor: COLORS.primary,
   },
   chipText: {
     fontSize: 12,
@@ -424,22 +395,8 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   chipTextActive: {
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
     fontWeight: '700',
-  },
-  clearFilterPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 6,
-    borderRadius: RADII.full,
-    backgroundColor: COLORS.errorBg,
-  },
-  clearFilterText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.error,
   },
   exportPill: {
     marginLeft: 'auto',
@@ -448,7 +405,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: SPACING.md,
     paddingVertical: 6,
-    borderRadius: RADII.full,
+    borderRadius: RADII.xl,
     backgroundColor: COLORS.primaryLight,
   },
   exportPillDisabled: {
@@ -457,32 +414,43 @@ const styles = StyleSheet.create({
   exportPillText: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
   },
   activeFilterBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: COLORS.primaryLight,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   activeFilterText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
+  },
+  resetFilterLink: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.error,
   },
   listContent: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
+    paddingBottom: 96,
   },
   separator: {
-    height: SPACING.md,
+    height: SPACING.sm + 4,
   },
   pressed: {
+    transform: [{ scale: 0.96 }],
     opacity: 0.8,
   },
   fab: {
     position: 'absolute',
-    right: SPACING.xl,
+    right: SPACING.lg,
+    bottom: SPACING.lg,
     width: 58,
     height: 58,
     borderRadius: RADII.full,
@@ -493,7 +461,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   fabPressed: {
-    transform: [{ scale: 0.96 }],
+    transform: [{ scale: 0.95 }],
     opacity: 0.9,
   },
 });

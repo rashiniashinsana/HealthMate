@@ -15,28 +15,33 @@ export const VALIDATION_LIMITS = {
 export const QUICK_WATER_INCREMENT_ML = 250;
 
 export const COLORS = {
-  // Brand & Surfaces (Material Design 3 / iOS HIG)
-  primary: '#0F766E',
-  primaryDark: '#115E59',
-  primaryLight: '#E0F2F1',
-  background: '#F6F8FA',
+  // Primary & Surface Hierarchy (Material Design 3)
+  primary: '#0284C7',
+  primaryDark: '#0369A1',
+  primaryLight: '#E0F2FE',
+  background: '#F7F9FC',
   surface: '#FFFFFF',
   surfaceMuted: '#F1F5F9',
-  border: '#E2E8F0',
+  border: '#EDF2F7',
 
   // Typography
   textPrimary: '#0F172A',
   textSecondary: '#475569',
-  textMuted: '#64748B',
+  textMuted: '#94A3B8',
   textOnPrimary: '#FFFFFF',
 
-  // Metric Accents
-  steps: '#2E7D32',
-  stepsBg: '#E8F5E9',
-  calories: '#E53935',
-  caloriesBg: '#FFEBEE',
-  water: '#1E88E5',
-  waterBg: '#E3F2FD',
+  // Semantic Metric Accents
+  steps: '#16A34A',
+  stepsBg: '#DCFCE7',
+  stepsBadge: '#15803D',
+
+  calories: '#EA580C',
+  caloriesBg: '#FFEDD5',
+  caloriesBadge: '#C2410C',
+
+  water: '#0284C7',
+  waterBg: '#E0F2FE',
+  waterBadge: '#0369A1',
 
   // Semantic States
   success: '#16A34A',
@@ -47,29 +52,30 @@ export const COLORS = {
   errorBg: '#FEE2E2',
 } as const;
 
+// 8-point spacing grid
 export const SPACING = {
   xs: 4,
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
+  md: 16,
+  lg: 20,
+  xl: 24,
+  xxl: 32,
 } as const;
 
 export const RADII = {
   sm: 8,
   md: 12,
-  lg: 16,
-  xl: 22,
+  lg: 18,
+  xl: 24,
   full: 999,
 } as const;
 
 export const CARD_SHADOW = Platform.select({
   ios: {
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowRadius: 12,
   },
   android: {
     elevation: 2,

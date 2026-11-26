@@ -56,6 +56,9 @@ export const AddEditRecordScreen: React.FC = () => {
   const [touched, setTouched] = useState<
     Partial<Record<keyof HealthFormValues, boolean>>
   >({});
+  const [focusedField, setFocusedField] = useState<
+    keyof HealthFormValues | null
+  >(null);
   const [submitting, setSubmitting] = useState(false);
 
   const updateField = useCallback(
@@ -105,10 +108,13 @@ export const AddEditRecordScreen: React.FC = () => {
       setSubmitting(true);
       if (isEditing && existingRecord) {
         await updateEntry(existingRecord.id, payload);
+        closeOrReset();
+        showAlert('Record Updated', 'Your health entry has been updated.');
       } else {
         await addEntry(payload);
+        closeOrReset();
+        showAlert('Record Saved', 'Your daily health entry has been logged.');
       }
-      closeOrReset();
     } catch (err) {
       showAlert(
         'Save Failed',
@@ -122,6 +128,16 @@ export const AddEditRecordScreen: React.FC = () => {
   const todayISO = getTodayISO();
   const yesterdayISO = getOffsetDateISO(-1);
 
+  const getInputBoxStyle = (field: keyof HealthFormValues) => {
+    const hasError = touched[field] && Boolean(errors[field]);
+    const isFocused = focusedField === field;
+    return [
+      styles.inputBox,
+      isFocused && styles.inputBoxFocused,
+      hasError && styles.inputBoxError,
+    ];
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.screen}
@@ -130,20 +146,16 @@ export const AddEditRecordScreen: React.FC = () => {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: SPACING.xxl + insets.bottom },
+          { paddingBottom: SPACING.xl + insets.bottom },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.formCard}>
+          {/* Date */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Date (YYYY-MM-DD)</Text>
-            <View
-              style={[
-                styles.inputBox,
-                touched.date && errors.date ? styles.inputBoxError : undefined,
-              ]}
-            >
+            <View style={getInputBoxStyle('date')}>
               <MaterialCommunityIcons
                 name="calendar-outline"
                 size={20}
@@ -153,6 +165,8 @@ export const AddEditRecordScreen: React.FC = () => {
                 style={styles.input}
                 value={values.date}
                 onChangeText={(text) => updateField('date', text)}
+                onFocus={() => setFocusedField('date')}
+                onBlur={() => setFocusedField(null)}
                 placeholder="2026-11-26"
                 placeholderTextColor={COLORS.textMuted}
                 maxLength={10}
@@ -194,21 +208,26 @@ export const AddEditRecordScreen: React.FC = () => {
                 </Text>
               </Pressable>
             </View>
-            {touched.date && errors.date ? (
-              <Text style={styles.errorText}>{errors.date}</Text>
-            ) : null}
+            <View style={styles.errorSlot}>
+              {touched.date && errors.date ? (
+                <View style={styles.errorRow}>
+                  <MaterialCommunityIcons
+                    name="alert-circle-outline"
+                    size={14}
+                    color={COLORS.error}
+                  />
+                  <Text style={styles.errorText}>{errors.date}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
 
+          {/* Steps */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Steps Walked</Text>
-            <View
-              style={[
-                styles.inputBox,
-                touched.steps && errors.steps ? styles.inputBoxError : undefined,
-              ]}
-            >
+            <View style={getInputBoxStyle('steps')}>
               <MaterialCommunityIcons
-                name="walk"
+                name="shoe-print"
                 size={20}
                 color={COLORS.steps}
               />
@@ -216,6 +235,8 @@ export const AddEditRecordScreen: React.FC = () => {
                 style={styles.input}
                 value={values.steps}
                 onChangeText={(text) => updateField('steps', text)}
+                onFocus={() => setFocusedField('steps')}
+                onBlur={() => setFocusedField(null)}
                 placeholder="e.g. 8500"
                 placeholderTextColor={COLORS.textMuted}
                 keyboardType="number-pad"
@@ -223,21 +244,24 @@ export const AddEditRecordScreen: React.FC = () => {
               />
               <Text style={styles.unitSuffix}>steps</Text>
             </View>
-            {touched.steps && errors.steps ? (
-              <Text style={styles.errorText}>{errors.steps}</Text>
-            ) : null}
+            <View style={styles.errorSlot}>
+              {touched.steps && errors.steps ? (
+                <View style={styles.errorRow}>
+                  <MaterialCommunityIcons
+                    name="alert-circle-outline"
+                    size={14}
+                    color={COLORS.error}
+                  />
+                  <Text style={styles.errorText}>{errors.steps}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
 
+          {/* Calories */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Calories Burned</Text>
-            <View
-              style={[
-                styles.inputBox,
-                touched.calories && errors.calories
-                  ? styles.inputBoxError
-                  : undefined,
-              ]}
-            >
+            <View style={getInputBoxStyle('calories')}>
               <MaterialCommunityIcons
                 name="fire"
                 size={20}
@@ -247,6 +271,8 @@ export const AddEditRecordScreen: React.FC = () => {
                 style={styles.input}
                 value={values.calories}
                 onChangeText={(text) => updateField('calories', text)}
+                onFocus={() => setFocusedField('calories')}
+                onBlur={() => setFocusedField(null)}
                 placeholder="e.g. 480"
                 placeholderTextColor={COLORS.textMuted}
                 keyboardType="number-pad"
@@ -254,19 +280,24 @@ export const AddEditRecordScreen: React.FC = () => {
               />
               <Text style={styles.unitSuffix}>kcal</Text>
             </View>
-            {touched.calories && errors.calories ? (
-              <Text style={styles.errorText}>{errors.calories}</Text>
-            ) : null}
+            <View style={styles.errorSlot}>
+              {touched.calories && errors.calories ? (
+                <View style={styles.errorRow}>
+                  <MaterialCommunityIcons
+                    name="alert-circle-outline"
+                    size={14}
+                    color={COLORS.error}
+                  />
+                  <Text style={styles.errorText}>{errors.calories}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
 
+          {/* Water */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Water Intake (ml)</Text>
-            <View
-              style={[
-                styles.inputBox,
-                touched.water && errors.water ? styles.inputBoxError : undefined,
-              ]}
-            >
+            <View style={getInputBoxStyle('water')}>
               <MaterialCommunityIcons
                 name="water-outline"
                 size={20}
@@ -276,6 +307,8 @@ export const AddEditRecordScreen: React.FC = () => {
                 style={styles.input}
                 value={values.water}
                 onChangeText={(text) => updateField('water', text)}
+                onFocus={() => setFocusedField('water')}
+                onBlur={() => setFocusedField(null)}
                 placeholder="e.g. 2000"
                 placeholderTextColor={COLORS.textMuted}
                 keyboardType="number-pad"
@@ -294,9 +327,18 @@ export const AddEditRecordScreen: React.FC = () => {
                 </Pressable>
               ))}
             </View>
-            {touched.water && errors.water ? (
-              <Text style={styles.errorText}>{errors.water}</Text>
-            ) : null}
+            <View style={styles.errorSlot}>
+              {touched.water && errors.water ? (
+                <View style={styles.errorRow}>
+                  <MaterialCommunityIcons
+                    name="alert-circle-outline"
+                    size={14}
+                    color={COLORS.error}
+                  />
+                  <Text style={styles.errorText}>{errors.water}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
         </View>
 
@@ -307,7 +349,7 @@ export const AddEditRecordScreen: React.FC = () => {
             style={({ pressed }) => [
               styles.saveButton,
               submitting && styles.disabledButton,
-              pressed && styles.pressed,
+              pressed && styles.saveButtonPressed,
             ]}
           >
             {submitting ? (
@@ -348,8 +390,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   scrollContent: {
-    padding: SPACING.lg,
-    gap: SPACING.lg,
+    padding: SPACING.md,
+    gap: SPACING.md,
   },
   formCard: {
     backgroundColor: COLORS.surface,
@@ -357,28 +399,31 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    gap: SPACING.lg,
+    gap: SPACING.sm,
     ...CARD_SHADOW,
   },
   fieldGroup: {
-    gap: SPACING.xs,
+    gap: 6,
   },
   label: {
     fontSize: 13,
     fontWeight: '700',
     color: COLORS.textSecondary,
-    marginBottom: 2,
   },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    backgroundColor: COLORS.surfaceMuted,
+    backgroundColor: COLORS.background,
     borderWidth: 1.5,
     borderColor: COLORS.border,
     borderRadius: RADII.md,
     paddingHorizontal: SPACING.md,
     height: 48,
+  },
+  inputBoxFocused: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
   },
   inputBoxError: {
     borderColor: COLORS.error,
@@ -399,19 +444,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING.sm,
-    marginTop: 4,
+    marginTop: 2,
   },
   quickChip: {
     paddingHorizontal: SPACING.md,
     paddingVertical: 5,
-    borderRadius: RADII.full,
+    borderRadius: RADII.xl,
     backgroundColor: COLORS.surfaceMuted,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   quickChipActive: {
     backgroundColor: COLORS.primaryLight,
-    borderColor: COLORS.primary,
   },
   quickChipText: {
     fontSize: 12,
@@ -419,17 +461,26 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   quickChipTextActive: {
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
     fontWeight: '700',
+  },
+  // Reserve consistent vertical space so validation messages appear without layout shift.
+  errorSlot: {
+    minHeight: 18,
+    justifyContent: 'center',
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   errorText: {
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.error,
-    marginTop: 2,
   },
   buttonGroup: {
-    gap: SPACING.md,
+    gap: SPACING.sm + 4,
   },
   saveButton: {
     flexDirection: 'row',
@@ -441,8 +492,12 @@ const styles = StyleSheet.create({
     height: 52,
     ...CARD_SHADOW,
   },
+  saveButtonPressed: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
+  },
   disabledButton: {
-    opacity: 0.7,
+    opacity: 0.65,
   },
   saveButtonText: {
     fontSize: 16,

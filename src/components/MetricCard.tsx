@@ -12,7 +12,9 @@ export interface MetricCardProps {
   iconName: keyof typeof MaterialCommunityIcons.glyphMap;
   accentColor: string;
   accentBg: string;
+  badgeTextColor?: string;
   quickActionLabel?: string;
+  quickActionIcon?: keyof typeof MaterialCommunityIcons.glyphMap;
   onQuickAction?: () => void;
 }
 
@@ -24,12 +26,15 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   iconName,
   accentColor,
   accentBg,
+  badgeTextColor,
   quickActionLabel,
+  quickActionIcon = 'plus',
   onQuickAction,
 }) => {
   const ratio = goal > 0 ? value / goal : 0;
   const percent = Math.min(999, Math.round(ratio * 100));
   const goalMet = value >= goal;
+  const resolvedBadgeText = badgeTextColor ?? accentColor;
 
   return (
     <View style={styles.card}>
@@ -59,7 +64,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           <Text
             style={[
               styles.percentText,
-              { color: goalMet ? COLORS.success : accentColor },
+              { color: goalMet ? COLORS.stepsBadge : resolvedBadgeText },
             ]}
           >
             {goalMet ? 'Goal Met' : `${percent}%`}
@@ -84,8 +89,14 @@ export const MetricCard: React.FC<MetricCardProps> = ({
             accessibilityRole="button"
             accessibilityLabel={quickActionLabel}
           >
-            <MaterialCommunityIcons name="plus" size={16} color={accentColor} />
-            <Text style={[styles.quickButtonText, { color: accentColor }]}>
+            <MaterialCommunityIcons
+              name={quickActionIcon}
+              size={16}
+              color={resolvedBadgeText}
+            />
+            <Text
+              style={[styles.quickButtonText, { color: resolvedBadgeText }]}
+            >
               {quickActionLabel}
             </Text>
           </Pressable>
@@ -137,13 +148,14 @@ const styles = StyleSheet.create({
   },
   goalText: {
     fontSize: 12,
-    color: COLORS.textMuted,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   percentBadge: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
-    borderRadius: RADII.full,
+    borderRadius: RADII.xl,
   },
   percentText: {
     fontSize: 12,
@@ -168,13 +180,14 @@ const styles = StyleSheet.create({
   quickButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    borderRadius: RADII.full,
+    borderRadius: RADII.xl,
   },
   quickButtonPressed: {
-    opacity: 0.75,
+    transform: [{ scale: 0.96 }],
+    opacity: 0.8,
   },
   quickButtonText: {
     fontSize: 13,

@@ -20,7 +20,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     <View style={styles.container}>
       <View style={styles.iconCircle}>
         <MaterialCommunityIcons
-          name="clipboard-pulse-outline"
+          name="clipboard-text-search-outline"
           size={40}
           color={COLORS.primary}
         />
@@ -48,13 +48,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
   },
   iconCircle: {
-    width: 80,
-    height: 80,
+    width: 84,
+    height: 84,
     borderRadius: RADII.full,
     backgroundColor: COLORS.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   title: {
     fontSize: 18,
@@ -66,15 +66,15 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 14,
     lineHeight: 20,
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.xl,
   },
   button: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    borderRadius: RADII.full,
+    paddingVertical: 12,
+    borderRadius: RADII.xl,
   },
   buttonText: {
     color: COLORS.textOnPrimary,
@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   pressed: {
+    transform: [{ scale: 0.97 }],
     opacity: 0.85,
   },
 });

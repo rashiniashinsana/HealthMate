@@ -16,7 +16,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BmiCalculatorModal } from '../components/BmiCalculatorModal';
 import { MetricCard } from '../components/MetricCard';
 import { WeeklyTrendChart } from '../components/WeeklyTrendChart';
@@ -46,7 +45,6 @@ type DashboardNavProp = CompositeNavigationProp<
 
 export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashboardNavProp>();
-  const insets = useSafeAreaInsets();
   const {
     records,
     todaySummary,
@@ -89,11 +87,7 @@ export const DashboardScreen: React.FC = () => {
   const handleSaveGoals = useCallback(async () => {
     const nextErrors: Partial<Record<keyof UserGoals, string>> = {};
 
-    const validateGoalField = (
-      raw: string,
-      label: string,
-      max: number
-    ): number | null => {
+    const validateGoalField = (raw: string, max: number): number | null => {
       const trimmed = raw.trim();
       if (!trimmed || !/^\d+$/.test(trimmed)) {
         return null;
@@ -107,7 +101,6 @@ export const DashboardScreen: React.FC = () => {
 
     const parsedSteps = validateGoalField(
       goalInputs.stepGoal,
-      'Step goal',
       VALIDATION_LIMITS.MAX_STEPS
     );
     if (parsedSteps === null) {
@@ -116,7 +109,6 @@ export const DashboardScreen: React.FC = () => {
 
     const parsedCalories = validateGoalField(
       goalInputs.calorieGoal,
-      'Calorie goal',
       VALIDATION_LIMITS.MAX_CALORIES
     );
     if (parsedCalories === null) {
@@ -125,7 +117,6 @@ export const DashboardScreen: React.FC = () => {
 
     const parsedWater = validateGoalField(
       goalInputs.waterGoal,
-      'Water goal',
       VALIDATION_LIMITS.MAX_WATER_ML
     );
     if (parsedWater === null) {
@@ -244,10 +235,7 @@ export const DashboardScreen: React.FC = () => {
   return (
     <View style={styles.screen}>
       <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: 96 + insets.bottom },
-        ]}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
@@ -258,22 +246,22 @@ export const DashboardScreen: React.FC = () => {
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerBanner}>
-          <View style={styles.headerTextGroup}>
-            <Text style={styles.greetingLabel}>Daily Wellness Overview</Text>
+        {/* Hero Header */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroTextGroup}>
+            <Text style={styles.greetingText}>Hello, Tracker 👋</Text>
             <Text style={styles.todayHeading}>Today – {todayFormatted}</Text>
+            <Text style={styles.entrySubtext}>
+              {todaySummary.recordCount}{' '}
+              {todaySummary.recordCount === 1 ? 'log' : 'logs'} recorded today
+            </Text>
           </View>
-          <View style={styles.headerActions}>
-            <View style={styles.entryBadge}>
-              <Text style={styles.entryBadgeText}>
-                {todaySummary.recordCount}{' '}
-                {todaySummary.recordCount === 1 ? 'entry' : 'entries'}
-              </Text>
-            </View>
+
+          <View style={styles.heroActions}>
             <Pressable
               onPress={() => setBmiModalVisible(true)}
               style={({ pressed }) => [
-                styles.editGoalsBtn,
+                styles.circleActionBtn,
                 pressed && styles.pressed,
               ]}
               accessibilityRole="button"
@@ -281,23 +269,24 @@ export const DashboardScreen: React.FC = () => {
             >
               <MaterialCommunityIcons
                 name="calculator-variant-outline"
-                size={18}
-                color={COLORS.textOnPrimary}
+                size={20}
+                color={COLORS.primary}
               />
             </Pressable>
+
             <Pressable
               onPress={openGoalsModal}
               style={({ pressed }) => [
-                styles.editGoalsBtn,
+                styles.circleActionBtn,
                 pressed && styles.pressed,
               ]}
               accessibilityRole="button"
               accessibilityLabel="Edit Daily Goals"
             >
               <MaterialCommunityIcons
-                name="tune-variant"
-                size={18}
-                color={COLORS.textOnPrimary}
+                name="cog-outline"
+                size={20}
+                color={COLORS.textSecondary}
               />
             </Pressable>
           </View>
@@ -321,6 +310,7 @@ export const DashboardScreen: React.FC = () => {
           </View>
         ) : (
           <>
+            {/* Today's Metric Cards */}
             <View style={styles.cardsStack}>
               <MetricCard
                 title="Steps Walked"
@@ -330,6 +320,7 @@ export const DashboardScreen: React.FC = () => {
                 iconName="walk"
                 accentColor={COLORS.steps}
                 accentBg={COLORS.stepsBg}
+                badgeTextColor={COLORS.stepsBadge}
               />
 
               <MetricCard
@@ -340,6 +331,7 @@ export const DashboardScreen: React.FC = () => {
                 iconName="fire"
                 accentColor={COLORS.calories}
                 accentBg={COLORS.caloriesBg}
+                badgeTextColor={COLORS.caloriesBadge}
               />
 
               <MetricCard
@@ -350,7 +342,9 @@ export const DashboardScreen: React.FC = () => {
                 iconName="water-outline"
                 accentColor={COLORS.water}
                 accentBg={COLORS.waterBg}
+                badgeTextColor={COLORS.waterBadge}
                 quickActionLabel="+250 ml"
+                quickActionIcon="water-plus"
                 onQuickAction={handleQuickWater}
               />
             </View>
@@ -380,12 +374,15 @@ export const DashboardScreen: React.FC = () => {
                 </Pressable>
 
                 {trendsExpanded ? (
-                  <WeeklyTrendChart analytics={weeklyAnalytics} />
+                  <>
+                    <View style={styles.sectionDivider} />
+                    <WeeklyTrendChart analytics={weeklyAnalytics} />
+                  </>
                 ) : null}
               </View>
             ) : null}
 
-            {/* Recent Activity (Last 2 Entries) */}
+            {/* Recent Activity */}
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleRow}>
@@ -401,6 +398,8 @@ export const DashboardScreen: React.FC = () => {
                 </Pressable>
               </View>
 
+              <View style={styles.sectionDivider} />
+
               {recentActivity.length === 0 ? (
                 <Text style={styles.emptyRecentText}>
                   No entries logged yet. Tap + to add your first record.
@@ -409,44 +408,93 @@ export const DashboardScreen: React.FC = () => {
                 <View style={styles.recentList}>
                   {recentActivity.map((item) => (
                     <View key={item.id} style={styles.recentRow}>
-                      <View>
+                      <View style={styles.recentLeft}>
                         <Text style={styles.recentDate}>
                           {formatFriendlyDate(item.date)}
                         </Text>
-                        <Text style={styles.recentDateSub}>{item.date}</Text>
-                      </View>
-                      <View style={styles.recentRightGroup}>
-                        <View style={styles.recentMetrics}>
-                          <Text
-                            style={[styles.recentValue, { color: COLORS.steps }]}
+                        <View style={styles.recentBadgesRow}>
+                          <View
+                            style={[
+                              styles.miniBadge,
+                              { backgroundColor: COLORS.stepsBg },
+                            ]}
                           >
-                            {item.steps.toLocaleString()} steps
-                          </Text>
-                          <Text style={styles.recentSubMetrics}>
-                            {item.calories.toLocaleString()} kcal ·{' '}
-                            {item.water.toLocaleString()} ml
-                          </Text>
+                            <MaterialCommunityIcons
+                              name="walk"
+                              size={12}
+                              color={COLORS.stepsBadge}
+                            />
+                            <Text
+                              style={[
+                                styles.miniBadgeText,
+                                { color: COLORS.stepsBadge },
+                              ]}
+                            >
+                              {item.steps.toLocaleString()}
+                            </Text>
+                          </View>
+                          <View
+                            style={[
+                              styles.miniBadge,
+                              { backgroundColor: COLORS.caloriesBg },
+                            ]}
+                          >
+                            <MaterialCommunityIcons
+                              name="fire"
+                              size={12}
+                              color={COLORS.caloriesBadge}
+                            />
+                            <Text
+                              style={[
+                                styles.miniBadgeText,
+                                { color: COLORS.caloriesBadge },
+                              ]}
+                            >
+                              {item.calories.toLocaleString()}
+                            </Text>
+                          </View>
+                          <View
+                            style={[
+                              styles.miniBadge,
+                              { backgroundColor: COLORS.waterBg },
+                            ]}
+                          >
+                            <MaterialCommunityIcons
+                              name="water-outline"
+                              size={12}
+                              color={COLORS.waterBadge}
+                            />
+                            <Text
+                              style={[
+                                styles.miniBadgeText,
+                                { color: COLORS.waterBadge },
+                              ]}
+                            >
+                              {item.water.toLocaleString()} ml
+                            </Text>
+                          </View>
                         </View>
-                        <Pressable
-                          onPress={() =>
-                            navigation.navigate('AddEditRecord', {
-                              record: item,
-                            })
-                          }
-                          style={({ pressed }) => [
-                            styles.recentEditBtn,
-                            pressed && styles.pressed,
-                          ]}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Edit entry for ${item.date}`}
-                        >
-                          <MaterialCommunityIcons
-                            name="pencil-outline"
-                            size={16}
-                            color={COLORS.primary}
-                          />
-                        </Pressable>
                       </View>
+
+                      <Pressable
+                        onPress={() =>
+                          navigation.navigate('AddEditRecord', {
+                            record: item,
+                          })
+                        }
+                        style={({ pressed }) => [
+                          styles.recentEditBtn,
+                          pressed && styles.pressed,
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Edit entry for ${item.date}`}
+                      >
+                        <MaterialCommunityIcons
+                          name="pencil-outline"
+                          size={16}
+                          color={COLORS.primaryDark}
+                        />
+                      </Pressable>
                     </View>
                   ))}
                 </View>
@@ -465,13 +513,15 @@ export const DashboardScreen: React.FC = () => {
                   <Text style={styles.sectionTitle}>7-Day Rolling Averages</Text>
                 </View>
                 <Text style={styles.sectionMeta}>
-                  {weeklyStats.daysLogged}/7 days logged
+                  {weeklyStats.daysLogged}/7 days
                 </Text>
               </View>
 
+              <View style={styles.sectionDivider} />
+
               <View style={styles.statsGrid}>
                 <View style={styles.statBox}>
-                  <Text style={[styles.statValue, { color: COLORS.steps }]}>
+                  <Text style={[styles.statValue, { color: COLORS.stepsBadge }]}>
                     {weeklyStats.averageSteps.toLocaleString()}
                   </Text>
                   <Text style={styles.statLabel}>Avg Steps/day</Text>
@@ -480,7 +530,9 @@ export const DashboardScreen: React.FC = () => {
                 <View style={styles.statDivider} />
 
                 <View style={styles.statBox}>
-                  <Text style={[styles.statValue, { color: COLORS.calories }]}>
+                  <Text
+                    style={[styles.statValue, { color: COLORS.caloriesBadge }]}
+                  >
                     {weeklyStats.averageCalories.toLocaleString()}
                   </Text>
                   <Text style={styles.statLabel}>Avg kcal/day</Text>
@@ -489,7 +541,7 @@ export const DashboardScreen: React.FC = () => {
                 <View style={styles.statDivider} />
 
                 <View style={styles.statBox}>
-                  <Text style={[styles.statValue, { color: COLORS.water }]}>
+                  <Text style={[styles.statValue, { color: COLORS.waterBadge }]}>
                     {weeklyStats.averageWater.toLocaleString()}
                   </Text>
                   <Text style={styles.statLabel}>Avg ml/day</Text>
@@ -509,9 +561,11 @@ export const DashboardScreen: React.FC = () => {
                   <Text style={styles.sectionTitle}>Export Health Data</Text>
                 </View>
                 <Text style={styles.sectionMeta}>
-                  {records.length} total records
+                  {records.length} records
                 </Text>
               </View>
+
+              <View style={styles.sectionDivider} />
 
               <View style={styles.exportRow}>
                 <Pressable
@@ -525,7 +579,7 @@ export const DashboardScreen: React.FC = () => {
                   <MaterialCommunityIcons
                     name="file-delimited-outline"
                     size={18}
-                    color={COLORS.primary}
+                    color={COLORS.primaryDark}
                   />
                   <Text style={styles.exportButtonText}>Export CSV</Text>
                 </Pressable>
@@ -541,7 +595,7 @@ export const DashboardScreen: React.FC = () => {
                   <MaterialCommunityIcons
                     name="code-json"
                     size={18}
-                    color={COLORS.primary}
+                    color={COLORS.primaryDark}
                   />
                   <Text style={styles.exportButtonText}>Export JSON</Text>
                 </Pressable>
@@ -562,6 +616,8 @@ export const DashboardScreen: React.FC = () => {
                 <Text style={styles.sectionMeta}>Demo & Reset</Text>
               </View>
 
+              <View style={styles.sectionDivider} />
+
               <View style={styles.exportRow}>
                 <Pressable
                   onPress={handleResetSampleData}
@@ -573,7 +629,7 @@ export const DashboardScreen: React.FC = () => {
                   <MaterialCommunityIcons
                     name="restore"
                     size={18}
-                    color={COLORS.primary}
+                    color={COLORS.primaryDark}
                   />
                   <Text style={styles.exportButtonText}>Reset Sample</Text>
                 </Pressable>
@@ -600,11 +656,7 @@ export const DashboardScreen: React.FC = () => {
 
       <Pressable
         onPress={() => navigation.navigate('AddEditRecord')}
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: SPACING.xl + insets.bottom },
-          pressed && styles.fabPressed,
-        ]}
+        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
         accessibilityRole="button"
         accessibilityLabel="Quick Add Health Record"
       >
@@ -718,58 +770,53 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   scrollContent: {
-    padding: SPACING.lg,
-    gap: SPACING.lg,
+    padding: SPACING.md,
+    paddingBottom: 96,
+    gap: SPACING.md,
   },
-  headerBanner: {
-    backgroundColor: COLORS.primary,
+  heroCard: {
+    backgroundColor: COLORS.surface,
     borderRadius: RADII.lg,
     padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     ...CARD_SHADOW,
   },
-  headerTextGroup: {
+  heroTextGroup: {
     flex: 1,
     paddingRight: SPACING.sm,
   },
-  greetingLabel: {
-    fontSize: 12,
+  greetingText: {
+    fontSize: 13,
     fontWeight: '600',
-    color: COLORS.primaryLight,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 4,
+    color: COLORS.primary,
+    marginBottom: 2,
   },
   todayHeading: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.textOnPrimary,
+    color: COLORS.textPrimary,
   },
-  entryBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADII.full,
+  entrySubtext: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
-  headerActions: {
+  heroActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
   },
-  editGoalsBtn: {
-    width: 34,
-    height: 34,
+  circleActionBtn: {
+    width: 40,
+    height: 40,
     borderRadius: RADII.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: COLORS.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  entryBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textOnPrimary,
   },
   errorBanner: {
     flexDirection: 'row',
@@ -792,7 +839,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
   },
   cardsStack: {
     gap: SPACING.md,
@@ -809,7 +856,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.md,
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -817,14 +863,19 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
   sectionMeta: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: SPACING.sm + 4,
   },
   viewAllText: {
     fontSize: 13,
@@ -833,7 +884,7 @@ const styles = StyleSheet.create({
   },
   emptyRecentText: {
     fontSize: 13,
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
   },
   recentList: {
     gap: SPACING.sm,
@@ -842,49 +893,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.surfaceMuted,
-    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background,
+    paddingVertical: SPACING.sm + 2,
     paddingHorizontal: SPACING.md,
     borderRadius: RADII.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  recentLeft: {
+    flex: 1,
+    gap: 6,
   },
   recentDate: {
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
-  recentDateSub: {
-    fontSize: 11,
-    color: COLORS.textMuted,
+  recentBadgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   },
-  recentMetrics: {
-    alignItems: 'flex-end',
-  },
-  recentRightGroup: {
+  miniBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADII.xl,
+  },
+  miniBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   recentEditBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: RADII.sm,
+    width: 34,
+    height: 34,
+    borderRadius: RADII.full,
     backgroundColor: COLORS.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  recentValue: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  recentSubMetrics: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 2,
+    marginLeft: SPACING.sm,
   },
   statsGrid: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceMuted,
+    backgroundColor: COLORS.background,
     borderRadius: RADII.md,
     paddingVertical: SPACING.md,
   },
@@ -898,7 +952,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 11,
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   statDivider: {
@@ -908,7 +962,7 @@ const styles = StyleSheet.create({
   },
   exportRow: {
     flexDirection: 'row',
-    gap: SPACING.md,
+    gap: SPACING.sm + 4,
   },
   exportButton: {
     flex: 1,
@@ -916,14 +970,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.sm,
-    paddingVertical: SPACING.md,
+    paddingVertical: 12,
     borderRadius: RADII.md,
     backgroundColor: COLORS.primaryLight,
   },
   exportButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
   },
   clearAllButton: {
     flex: 1,
@@ -931,7 +985,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.sm,
-    paddingVertical: SPACING.md,
+    paddingVertical: 12,
     borderRadius: RADII.md,
     backgroundColor: COLORS.errorBg,
   },
@@ -941,11 +995,13 @@ const styles = StyleSheet.create({
     color: COLORS.error,
   },
   pressed: {
-    opacity: 0.75,
+    transform: [{ scale: 0.96 }],
+    opacity: 0.78,
   },
   fab: {
     position: 'absolute',
-    right: SPACING.xl,
+    right: SPACING.lg,
+    bottom: SPACING.lg,
     width: 58,
     height: 58,
     borderRadius: RADII.full,
@@ -953,13 +1009,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
     elevation: 6,
   },
   fabPressed: {
-    transform: [{ scale: 0.96 }],
+    transform: [{ scale: 0.95 }],
     opacity: 0.9,
   },
   modalBackdrop: {
@@ -967,7 +1023,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: SPACING.xl,
+    padding: SPACING.lg,
   },
   modalCard: {
     width: '100%',
@@ -999,7 +1055,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: COLORS.textPrimary,
-    backgroundColor: COLORS.surfaceMuted,
+    backgroundColor: COLORS.background,
   },
   modalInputError: {
     borderColor: COLORS.error,
@@ -1011,7 +1067,7 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: SPACING.md,
+    gap: SPACING.sm + 4,
     marginTop: SPACING.sm,
   },
   modalBtn: {
@@ -1023,8 +1079,6 @@ const styles = StyleSheet.create({
   },
   modalCancelBtn: {
     backgroundColor: COLORS.surfaceMuted,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   modalCancelText: {
     fontSize: 14,
