@@ -1,10 +1,16 @@
 import * as SQLite from 'expo-sqlite';
 import {
   DailySummary,
+  DayMetric,
   HealthRecord,
   NewHealthRecordInput,
+  WeeklyAnalyticsSummary,
 } from '../types/health';
-import { getOffsetDateISO, getTodayISO } from '../utils/dateUtils';
+import {
+  getOffsetDateISO,
+  getTodayISO,
+  parseISODate,
+} from '../utils/dateUtils';
 
 const DATABASE_NAME = 'healthmate.db';
 
@@ -73,10 +79,96 @@ export async function insertRecord(
 ): Promise<number> {
   const db = await getDatabase();
   const result = await db.runAsync(
-    'INSERT INTO health_records (date, steps, calories, water) VALUES (?, ?, ?, ?);',
+    `INSERT INTO health_records (date, steps, calories, water) VALUES (?, ?, ?, ?);`
+      .trim(),
     [record.date, record.steps, record.calories, record.water]
   );
   return result.lastInsertRowId;
+}
+
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+interface DailyGroupedRow {
+  date: string;
+  steps: number;
+  calories: number;
+  water: number;
+}
+
+interface RollingAverageRow {
+  avgSteps: number;
+  avgCalories: number;
+  avgWater: number;
+}
+
+/**
+ * Aggregates daily totals and rolling averages for the trailing 7-day window,
+ * padding missing calendar dates with zeros so the chart always renders 7 bars.
+ */
+export async function getWeeklyAnalytics(
+  endDate: string = getTodayISO()
+): Promise<WeeklyAnalyticsSummary> {
+  const db = await getDatabase();
+  const startDate = getOffsetDateISO(-6);
+
+  const [groupedRows, avgRow] = await Promise.all([
+    db.getAllAsync<DailyGroupedRow>(
+      `SELECT
+        date,
+        COALESCE(SUM(steps), 0) AS steps,
+        COALESCE(SUM(calories), 0) AS calories,
+        COALESCE(SUM(water), 0) AS water
+       FROM health_records
+       WHERE date BETWEEN ? AND ?
+       GROUP BY date
+       ORDER BY date ASC;`,
+      [startDate, endDate]
+    ),
+    db.getFirstAsync<RollingAverageRow>(
+      `SELECT
+        COALESCE(AVG(daily_steps), 0) AS avgSteps,
+        COALESCE(AVG(daily_calories), 0) AS avgCalories,
+        COALESCE(AVG(daily_water), 0) AS avgWater
+       FROM (
+         SELECT
+           SUM(steps) AS daily_steps,
+           SUM(calories) AS daily_calories,
+           SUM(water) AS daily_water
+         FROM health_records
+         WHERE date BETWEEN ? AND ?
+         GROUP BY date
+       );`,
+      [startDate, endDate]
+    ),
+  ]);
+
+  const byDate = new Map<string, DailyGroupedRow>();
+  for (const row of groupedRows) {
+    byDate.set(row.date, row);
+  }
+
+  const days: DayMetric[] = [];
+  for (let offset = -6; offset <= 0; offset += 1) {
+    const isoDate = getOffsetDateISO(offset);
+    const parsed = parseISODate(isoDate);
+    const label = parsed ? WEEKDAY_LABELS[parsed.getDay()] : isoDate.slice(5);
+    const existing = byDate.get(isoDate);
+
+    days.push({
+      date: isoDate,
+      label,
+      steps: existing?.steps ?? 0,
+      calories: existing?.calories ?? 0,
+      water: existing?.water ?? 0,
+    });
+  }
+
+  return {
+    days,
+    avgSteps: Math.round(avgRow?.avgSteps ?? 0),
+    avgCalories: Math.round(avgRow?.avgCalories ?? 0),
+    avgWater: Math.round(avgRow?.avgWater ?? 0),
+  };
 }
 
 export async function getAllRecords(): Promise<HealthRecord[]> {

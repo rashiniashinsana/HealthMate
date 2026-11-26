@@ -11,6 +11,7 @@ import {
   deleteRecord,
   getAllRecords,
   getRecordsByDate,
+  getWeeklyAnalytics,
   initDatabase,
   insertRecord,
   resetSampleData,
@@ -26,7 +27,11 @@ import {
   WeeklyStats,
 } from '../models/HealthRecord';
 import { DEFAULT_USER_GOALS, UserGoals } from '../types/goals';
-import { HealthRecord, NewHealthRecordInput } from '../types/health';
+import {
+  HealthRecord,
+  NewHealthRecordInput,
+  WeeklyAnalyticsSummary,
+} from '../types/health';
 import { QUICK_WATER_INCREMENT_ML } from '../utils/constants';
 import { getTodayISO } from '../utils/dateUtils';
 import { getStoredGoals, saveStoredGoals } from '../utils/goalStorage';
@@ -39,6 +44,7 @@ export interface HealthContextValue {
   records: HealthRecord[];
   todaySummary: ExtendedDailySummary;
   weeklyStats: WeeklyStats;
+  weeklyAnalytics: WeeklyAnalyticsSummary | null;
   goals: UserGoals;
   isInitialized: boolean;
   isLoading: boolean;
@@ -99,6 +105,8 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
     useState<ExtendedDailySummary>(DEFAULT_SUMMARY);
   const [weeklyStats, setWeeklyStats] =
     useState<WeeklyStats>(DEFAULT_WEEKLY_STATS);
+  const [weeklyAnalytics, setWeeklyAnalytics] =
+    useState<WeeklyAnalyticsSummary | null>(null);
   const [goals, setGoals] = useState<UserGoals>(DEFAULT_USER_GOALS);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -109,16 +117,26 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
   const activeFilterRef = useRef<string | null>(null);
   activeFilterRef.current = dateFilter;
 
-  const loadSnapshot = useCallback(async (activeDate: string | null) => {
-    const [fetchedRecords, summary, weekly] = await Promise.all([
-      activeDate ? getRecordsByDate(activeDate) : getAllRecords(),
-      getTodaySummary(),
-      getWeeklyStats(),
-    ]);
-    setRecords(fetchedRecords);
-    setTodaySummary(summary);
-    setWeeklyStats(weekly);
+  const loadWeeklyAnalytics = useCallback(async () => {
+    const analytics = await getWeeklyAnalytics();
+    setWeeklyAnalytics(analytics);
   }, []);
+
+  const loadSnapshot = useCallback(
+    async (activeDate: string | null) => {
+      const [fetchedRecords, summary, weekly, analytics] = await Promise.all([
+        activeDate ? getRecordsByDate(activeDate) : getAllRecords(),
+        getTodaySummary(),
+        getWeeklyStats(),
+        getWeeklyAnalytics(),
+      ]);
+      setRecords(fetchedRecords);
+      setTodaySummary(summary);
+      setWeeklyStats(weekly);
+      setWeeklyAnalytics(analytics);
+    },
+    []
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -159,7 +177,10 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setIsLoading(true);
       setError(null);
-      await loadSnapshot(activeFilterRef.current);
+      await Promise.all([
+        loadSnapshot(activeFilterRef.current),
+        loadWeeklyAnalytics(),
+      ]);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to refresh health data.'
@@ -167,7 +188,7 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [loadSnapshot]);
+  }, [loadSnapshot, loadWeeklyAnalytics]);
 
   const setDateFilter = useCallback(
     async (date: string | null) => {
@@ -313,6 +334,7 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
       records,
       todaySummary,
       weeklyStats,
+      weeklyAnalytics,
       goals,
       isInitialized,
       isLoading,
@@ -333,6 +355,7 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
       records,
       todaySummary,
       weeklyStats,
+      weeklyAnalytics,
       goals,
       isInitialized,
       isLoading,

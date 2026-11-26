@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MetricCard } from '../components/MetricCard';
+import { WeeklyTrendChart } from '../components/WeeklyTrendChart';
 import { serializeRecords } from '../database/healthRepository';
 import { useHealth } from '../hooks/useHealth';
 import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
@@ -49,6 +50,7 @@ export const DashboardScreen: React.FC = () => {
     records,
     todaySummary,
     weeklyStats,
+    weeklyAnalytics,
     goals,
     isLoading,
     error,
@@ -61,6 +63,7 @@ export const DashboardScreen: React.FC = () => {
   } = useHealth();
 
   const [exporting, setExporting] = useState(false);
+  const [trendsExpanded, setTrendsExpanded] = useState(true);
   const [goalsModalVisible, setGoalsModalVisible] = useState(false);
   const [goalInputs, setGoalInputs] = useState({
     stepGoal: String(goals.stepGoal),
@@ -334,6 +337,36 @@ export const DashboardScreen: React.FC = () => {
                 onQuickAction={handleQuickWater}
               />
             </View>
+
+            {/* 7-Day Weekly Trend Visualization */}
+            {weeklyAnalytics ? (
+              <View style={styles.sectionCard}>
+                <Pressable
+                  onPress={() => setTrendsExpanded((prev) => !prev)}
+                  style={styles.sectionHeader}
+                  accessibilityRole="button"
+                  accessibilityLabel="Toggle 7-Day Trend Chart"
+                >
+                  <View style={styles.sectionTitleRow}>
+                    <MaterialCommunityIcons
+                      name="chart-bar"
+                      size={20}
+                      color={COLORS.primary}
+                    />
+                    <Text style={styles.sectionTitle}>7-Day Trends</Text>
+                  </View>
+                  <MaterialCommunityIcons
+                    name={trendsExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={COLORS.textMuted}
+                  />
+                </Pressable>
+
+                {trendsExpanded ? (
+                  <WeeklyTrendChart analytics={weeklyAnalytics} />
+                ) : null}
+              </View>
+            ) : null}
 
             {/* Recent Activity (Last 2 Entries) */}
             <View style={styles.sectionCard}>
