@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../constants/theme';
 import { AddEditRecordScreen } from '../screens/AddEditRecordScreen';
@@ -24,6 +25,39 @@ export type RootStackParamList = {
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const BrandHeaderTitle: React.FC = () => (
+  <View style={styles.brandContainer}>
+    <View style={styles.brandIconBadge}>
+      <MaterialCommunityIcons
+        name="heart-pulse"
+        size={20}
+        color={Theme.colors.water.primary}
+      />
+    </View>
+    <View>
+      <View style={styles.brandNameRow}>
+        <Text style={styles.brandTitlePrimary}>Health</Text>
+        <Text style={styles.brandTitleAccent}>Mate</Text>
+      </View>
+      <View style={styles.brandDotsRow}>
+        <View
+          style={[styles.brandDot, { backgroundColor: Theme.colors.steps.primary }]}
+        />
+        <View
+          style={[
+            styles.brandDot,
+            { backgroundColor: Theme.colors.calories.primary },
+          ]}
+        />
+        <View
+          style={[styles.brandDot, { backgroundColor: Theme.colors.water.primary }]}
+        />
+        <Text style={styles.brandSubtitle}>Wellness Tracker</Text>
+      </View>
+    </View>
+  </View>
+);
+
 const MainTabs: React.FC = () => {
   const insets = useSafeAreaInsets();
   const bottomPadding = Math.max(8, insets.bottom);
@@ -33,6 +67,8 @@ const MainTabs: React.FC = () => {
       screenOptions={{
         headerStyle: {
           backgroundColor: COLORS.surface,
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.border,
         },
         headerTitleStyle: {
           fontWeight: '700',
@@ -69,6 +105,7 @@ const MainTabs: React.FC = () => {
         component={DashboardScreen}
         options={{
           title: 'HealthMate',
+          headerTitle: () => <BrandHeaderTitle />,
           tabBarLabel: 'Dashboard',
           tabBarIcon: ({ focused, color, size }) => (
             <MaterialCommunityIcons
@@ -148,3 +185,55 @@ export const AppNavigator: React.FC = () => {
     </Stack.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  brandContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  brandIconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: RADII.md,
+    backgroundColor: Theme.colors.water.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.water.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandTitlePrimary: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: Theme.colors.neutral.textPrimary,
+    letterSpacing: -0.3,
+  },
+  brandTitleAccent: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: Theme.colors.water.primary,
+    letterSpacing: -0.3,
+  },
+  brandDotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 1,
+  },
+  brandDot: {
+    width: 5,
+    height: 5,
+    borderRadius: RADII.full,
+  },
+  brandSubtitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Theme.colors.neutral.textSecondary,
+    marginLeft: 2,
+    letterSpacing: 0.3,
+  },
+});
