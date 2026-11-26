@@ -251,7 +251,7 @@ export const RecordListScreen: React.FC = () => {
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
-          loading ? null : (
+          loading ? undefined : (
             <EmptyState
               title={
                 selectedDateFilter
