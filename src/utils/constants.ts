@@ -15,13 +15,13 @@ export const VALIDATION_LIMITS = {
 export const QUICK_WATER_INCREMENT_ML = 250;
 
 export const COLORS = {
-  // Brand & Surfaces (Material Design 3 / iOS HIG inspired)
+  // Brand & Surfaces (Material Design 3 / iOS HIG)
   primary: '#0F766E',
   primaryDark: '#115E59',
-  primaryLight: '#CCFBF1',
-  background: '#F1F5F9',
+  primaryLight: '#E0F2F1',
+  background: '#F8F9FA',
   surface: '#FFFFFF',
-  surfaceMuted: '#F8FAFC',
+  surfaceMuted: '#F1F5F9',
   border: '#E2E8F0',
 
   // Typography
@@ -31,12 +31,12 @@ export const COLORS = {
   textOnPrimary: '#FFFFFF',
 
   // Metric Accents
-  steps: '#0F766E',
-  stepsBg: '#CCFBF1',
-  calories: '#EA580C',
-  caloriesBg: '#FFEDD5',
-  water: '#0284C7',
-  waterBg: '#E0F2FE',
+  steps: '#4CAF50',
+  stepsBg: '#E8F5E9',
+  calories: '#FF5722',
+  caloriesBg: '#FBE9E7',
+  water: '#2196F3',
+  waterBg: '#E3F2FD',
 
   // Semantic States
   success: '#16A34A',

@@ -12,12 +12,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { ConfirmModal } from '../components/ConfirmModal';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '../components/EmptyState';
 import { RecordCard } from '../components/RecordCard';
-import { useHealth } from '../context/HealthContext';
-import { HealthRecord } from '../models/HealthRecord';
+import { useHealth } from '../hooks/useHealth';
 import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
+import { HealthRecord } from '../types/health';
 import { CARD_SHADOW, COLORS, RADII, SPACING } from '../utils/constants';
 import {
   formatDisplayDate,
@@ -25,6 +25,7 @@ import {
   getTodayISO,
   isValidISODate,
 } from '../utils/dateUtils';
+import { showConfirm } from '../utils/platformAlert';
 
 type RecordListNavProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Records'>,
@@ -33,20 +34,18 @@ type RecordListNavProp = CompositeNavigationProp<
 
 export const RecordListScreen: React.FC = () => {
   const navigation = useNavigation<RecordListNavProp>();
+  const insets = useSafeAreaInsets();
   const {
     records,
-    loading,
+    isLoading,
     selectedDateFilter,
-    refreshRecords,
+    refreshData,
     filterByDate,
     removeRecord,
   } = useHealth();
 
   const [dateQuery, setDateQuery] = useState<string>(selectedDateFilter ?? '');
   const [filterError, setFilterError] = useState<string | null>(null);
-  const [recordToDelete, setRecordToDelete] = useState<HealthRecord | null>(
-    null
-  );
 
   const handleApplyFilter = useCallback(async () => {
     const trimmed = dateQuery.trim();
@@ -87,25 +86,32 @@ export const RecordListScreen: React.FC = () => {
     [navigation]
   );
 
-  const handleConfirmDelete = useCallback(async () => {
-    if (!recordToDelete) {
-      return;
-    }
-    const targetId = recordToDelete.id;
-    setRecordToDelete(null);
-    try {
-      await removeRecord(targetId);
-    } catch {
-      // Error surfaced by HealthContext
-    }
-  }, [recordToDelete, removeRecord]);
+  const handleDeletePrompt = useCallback(
+    (record: HealthRecord) => {
+      showConfirm(
+        'Delete Health Record',
+        `Are you sure you want to delete the entry for ${formatDisplayDate(
+          record.date
+        )} (${record.steps.toLocaleString()} steps)?`,
+        async () => {
+          try {
+            await removeRecord(record.id);
+          } catch {
+            // Error surfaced by HealthContext.
+          }
+        },
+        'Delete',
+        true
+      );
+    },
+    [removeRecord]
+  );
 
   const todayISO = getTodayISO();
   const yesterdayISO = getOffsetDateISO(-1);
 
   return (
     <View style={styles.screen}>
-      {/* Search & Date Filter Bar */}
       <View style={styles.filterContainer}>
         <View style={styles.searchRow}>
           <View
@@ -233,11 +239,14 @@ export const RecordListScreen: React.FC = () => {
       <FlatList
         data={records}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: 96 + insets.bottom },
+        ]}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={refreshRecords}
+            refreshing={isLoading}
+            onRefresh={refreshData}
             tintColor={COLORS.primary}
             colors={[COLORS.primary]}
           />
@@ -246,12 +255,12 @@ export const RecordListScreen: React.FC = () => {
           <RecordCard
             record={item}
             onEdit={handleEdit}
-            onDelete={setRecordToDelete}
+            onDelete={handleDeletePrompt}
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
-          loading ? undefined : (
+          isLoading ? undefined : (
             <EmptyState
               title={
                 selectedDateFilter
@@ -280,7 +289,11 @@ export const RecordListScreen: React.FC = () => {
 
       <Pressable
         onPress={() => navigation.navigate('AddEditRecord')}
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: SPACING.xl + insets.bottom },
+          pressed && styles.fabPressed,
+        ]}
         accessibilityRole="button"
         accessibilityLabel="Add Health Record"
       >
@@ -290,23 +303,6 @@ export const RecordListScreen: React.FC = () => {
           color={COLORS.textOnPrimary}
         />
       </Pressable>
-
-      <ConfirmModal
-        visible={recordToDelete !== null}
-        title="Delete Health Record?"
-        message={
-          recordToDelete
-            ? `Are you sure you want to delete the entry for ${formatDisplayDate(
-                recordToDelete.date
-              )} (${recordToDelete.steps.toLocaleString()} steps)? This action cannot be undone.`
-            : ''
-        }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        destructive
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setRecordToDelete(null)}
-      />
     </View>
   );
 };
@@ -410,7 +406,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: SPACING.lg,
-    paddingBottom: 96,
   },
   separator: {
     height: SPACING.md,
@@ -421,7 +416,6 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: SPACING.xl,
-    bottom: SPACING.xl,
     width: 58,
     height: 58,
     borderRadius: RADII.full,

@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,9 +14,10 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MetricCard } from '../components/MetricCard';
-import { useHealth } from '../context/HealthContext';
 import { serializeRecords } from '../database/healthRepository';
+import { useHealth } from '../hooks/useHealth';
 import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
 import {
   CARD_SHADOW,
@@ -26,7 +27,12 @@ import {
   RADII,
   SPACING,
 } from '../utils/constants';
-import { formatDisplayDate, getTodayISO } from '../utils/dateUtils';
+import {
+  formatFriendlyDate,
+  formatLongDate,
+  getTodayISO,
+} from '../utils/dateUtils';
+import { showAlert, showConfirm } from '../utils/platformAlert';
 
 type DashboardNavProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
@@ -35,14 +41,17 @@ type DashboardNavProp = CompositeNavigationProp<
 
 export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashboardNavProp>();
+  const insets = useSafeAreaInsets();
   const {
     records,
     todaySummary,
     weeklyStats,
-    loading,
+    isLoading,
     error,
-    refreshRecords,
-    quickLogWater,
+    refreshData,
+    quickAddWater,
+    clearAllData,
+    resetToSampleData,
     clearError,
   } = useHealth();
 
@@ -50,16 +59,16 @@ export const DashboardScreen: React.FC = () => {
 
   const handleQuickWater = useCallback(async () => {
     try {
-      await quickLogWater(QUICK_WATER_INCREMENT_ML);
+      await quickAddWater(QUICK_WATER_INCREMENT_ML);
     } catch {
-      // Error state is handled by HealthContext
+      // Error banner is driven by HealthContext.
     }
-  }, [quickLogWater]);
+  }, [quickAddWater]);
 
   const handleExport = useCallback(
     async (format: 'csv' | 'json') => {
       if (records.length === 0) {
-        Alert.alert(
+        showAlert(
           'Nothing to Export',
           'Add at least one health record before exporting.'
         );
@@ -69,12 +78,28 @@ export const DashboardScreen: React.FC = () => {
       try {
         setExporting(true);
         const payload = serializeRecords(records, format);
+
+        if (Platform.OS === 'web' && typeof document !== 'undefined') {
+          const mimeType =
+            format === 'json' ? 'application/json' : 'text/csv;charset=utf-8;';
+          const blob = new Blob([payload], { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `healthmate-export-${getTodayISO()}.${format}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          return;
+        }
+
         await Share.share({
           title: `HealthMate Export (${format.toUpperCase()})`,
           message: payload,
         });
       } catch (err) {
-        Alert.alert(
+        showAlert(
           'Export Failed',
           err instanceof Error ? err.message : 'Unable to export records.'
         );
@@ -85,16 +110,51 @@ export const DashboardScreen: React.FC = () => {
     [records]
   );
 
-  const todayFormatted = formatDisplayDate(getTodayISO());
+  const handleResetSampleData = useCallback(() => {
+    showConfirm(
+      'Reset Sample Data',
+      'Replace current records with the default 4 sample health entries?',
+      async () => {
+        try {
+          await resetToSampleData();
+        } catch {
+          // Error surfaced by HealthContext.
+        }
+      },
+      'Reset'
+    );
+  }, [resetToSampleData]);
+
+  const handleClearAllData = useCallback(() => {
+    showConfirm(
+      'Clear All Records',
+      'Delete all stored health records? You can restore sample data anytime.',
+      async () => {
+        try {
+          await clearAllData();
+        } catch {
+          // Error surfaced by HealthContext.
+        }
+      },
+      'Clear All',
+      true
+    );
+  }, [clearAllData]);
+
+  const todayFormatted = formatLongDate(getTodayISO());
+  const recentActivity = records.slice(0, 2);
 
   return (
     <View style={styles.screen}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 96 + insets.bottom },
+        ]}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={refreshRecords}
+            refreshing={isLoading}
+            onRefresh={refreshData}
             tintColor={COLORS.primary}
             colors={[COLORS.primary]}
           />
@@ -125,7 +185,7 @@ export const DashboardScreen: React.FC = () => {
           </Pressable>
         ) : null}
 
-        {loading && records.length === 0 ? (
+        {isLoading && records.length === 0 ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.loadingText}>Loading your health data...</Text>
@@ -166,7 +226,54 @@ export const DashboardScreen: React.FC = () => {
               />
             </View>
 
-            {/* 7-Day Rolling Averages Card */}
+            {/* Recent Activity (Last 2 Entries) */}
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <MaterialCommunityIcons
+                    name="clock-outline"
+                    size={20}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.sectionTitle}>Recent Activity</Text>
+                </View>
+                <Pressable onPress={() => navigation.navigate('Records')}>
+                  <Text style={styles.viewAllText}>View All</Text>
+                </Pressable>
+              </View>
+
+              {recentActivity.length === 0 ? (
+                <Text style={styles.emptyRecentText}>
+                  No entries logged yet. Tap + to add your first record.
+                </Text>
+              ) : (
+                <View style={styles.recentList}>
+                  {recentActivity.map((item) => (
+                    <View key={item.id} style={styles.recentRow}>
+                      <View>
+                        <Text style={styles.recentDate}>
+                          {formatFriendlyDate(item.date)}
+                        </Text>
+                        <Text style={styles.recentDateSub}>{item.date}</Text>
+                      </View>
+                      <View style={styles.recentMetrics}>
+                        <Text
+                          style={[styles.recentValue, { color: COLORS.steps }]}
+                        >
+                          {item.steps.toLocaleString()} steps
+                        </Text>
+                        <Text style={styles.recentSubMetrics}>
+                          {item.calories.toLocaleString()} kcal ·{' '}
+                          {item.water.toLocaleString()} ml
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* 7-Day Rolling Averages */}
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleRow}>
@@ -210,7 +317,7 @@ export const DashboardScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Data Export Card */}
+            {/* Data Export */}
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleRow}>
@@ -260,14 +367,64 @@ export const DashboardScreen: React.FC = () => {
                 </Pressable>
               </View>
             </View>
+
+            {/* Demo & Examiner Data Controls */}
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <MaterialCommunityIcons
+                    name="database-refresh-outline"
+                    size={20}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.sectionTitle}>Data Controls</Text>
+                </View>
+                <Text style={styles.sectionMeta}>Demo & Reset</Text>
+              </View>
+
+              <View style={styles.exportRow}>
+                <Pressable
+                  onPress={handleResetSampleData}
+                  style={({ pressed }) => [
+                    styles.exportButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="restore"
+                    size={18}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.exportButtonText}>Reset Sample</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleClearAllData}
+                  style={({ pressed }) => [
+                    styles.clearAllButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="delete-sweep-outline"
+                    size={18}
+                    color={COLORS.error}
+                  />
+                  <Text style={styles.clearAllButtonText}>Clear All</Text>
+                </Pressable>
+              </View>
+            </View>
           </>
         )}
       </ScrollView>
 
-      {/* Quick Add Floating Action Button */}
       <Pressable
         onPress={() => navigation.navigate('AddEditRecord')}
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: SPACING.xl + insets.bottom },
+          pressed && styles.fabPressed,
+        ]}
         accessibilityRole="button"
         accessibilityLabel="Quick Add Health Record"
       >
@@ -288,7 +445,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.lg,
-    paddingBottom: 96,
     gap: SPACING.lg,
   },
   headerBanner: {
@@ -383,6 +539,48 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textMuted,
   },
+  viewAllText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  emptyRecentText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+  },
+  recentList: {
+    gap: SPACING.sm,
+  },
+  recentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.surfaceMuted,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADII.md,
+  },
+  recentDate: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  recentDateSub: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+  },
+  recentMetrics: {
+    alignItems: 'flex-end',
+  },
+  recentValue: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  recentSubMetrics: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
   statsGrid: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -427,13 +625,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
   },
+  clearAllButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.md,
+    borderRadius: RADII.md,
+    backgroundColor: COLORS.errorBg,
+  },
+  clearAllButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.error,
+  },
   pressed: {
     opacity: 0.75,
   },
   fab: {
     position: 'absolute',
     right: SPACING.xl,
-    bottom: SPACING.xl,
     width: 58,
     height: 58,
     borderRadius: RADII.full,

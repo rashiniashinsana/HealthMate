@@ -1,10 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import {
+  CompositeNavigationProp,
+  RouteProp,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,25 +19,28 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useHealth } from '../context/HealthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHealth } from '../hooks/useHealth';
 import { HealthFormErrors, HealthFormValues } from '../models/HealthRecord';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { MainTabParamList, RootStackParamList } from '../navigation/AppNavigator';
 import { CARD_SHADOW, COLORS, RADII, SPACING } from '../utils/constants';
 import { getOffsetDateISO, getTodayISO } from '../utils/dateUtils';
+import { showAlert } from '../utils/platformAlert';
 import {
   hasValidationErrors,
   validateHealthForm,
 } from '../utils/validation';
 
 type AddEditRouteProp = RouteProp<RootStackParamList, 'AddEditRecord'>;
-type AddEditNavProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'AddEditRecord'
+type AddEditNavProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'AddRecord'>,
+  NativeStackNavigationProp<RootStackParamList>
 >;
 
 export const AddEditRecordScreen: React.FC = () => {
   const navigation = useNavigation<AddEditNavProp>();
   const route = useRoute<AddEditRouteProp>();
+  const insets = useSafeAreaInsets();
   const existingRecord = route.params?.record;
   const isEditing = Boolean(existingRecord);
 
@@ -61,6 +69,22 @@ export const AddEditRecordScreen: React.FC = () => {
     [values]
   );
 
+  const closeOrReset = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    setValues({
+      date: getTodayISO(),
+      steps: '',
+      calories: '',
+      water: '',
+    });
+    setErrors({});
+    setTouched({});
+    navigation.navigate('Dashboard');
+  }, [navigation]);
+
   const handleSubmit = useCallback(async () => {
     const allErrors = validateHealthForm(values);
     setErrors(allErrors);
@@ -84,16 +108,16 @@ export const AddEditRecordScreen: React.FC = () => {
       } else {
         await addRecord(payload);
       }
-      navigation.goBack();
+      closeOrReset();
     } catch (err) {
-      Alert.alert(
+      showAlert(
         'Save Failed',
         err instanceof Error ? err.message : 'Unable to save health record.'
       );
     } finally {
       setSubmitting(false);
     }
-  }, [values, isEditing, existingRecord, editRecord, addRecord, navigation]);
+  }, [values, isEditing, existingRecord, editRecord, addRecord, closeOrReset]);
 
   const todayISO = getTodayISO();
   const yesterdayISO = getOffsetDateISO(-1);
@@ -104,12 +128,14 @@ export const AddEditRecordScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: SPACING.xxl + insets.bottom },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.formCard}>
-          {/* Date Field */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Date (YYYY-MM-DD)</Text>
             <View
@@ -173,7 +199,6 @@ export const AddEditRecordScreen: React.FC = () => {
             ) : null}
           </View>
 
-          {/* Steps Field */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Steps Walked</Text>
             <View
@@ -203,7 +228,6 @@ export const AddEditRecordScreen: React.FC = () => {
             ) : null}
           </View>
 
-          {/* Calories Field */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Calories Burned</Text>
             <View
@@ -235,7 +259,6 @@ export const AddEditRecordScreen: React.FC = () => {
             ) : null}
           </View>
 
-          {/* Water Field */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Water Intake (ml)</Text>
             <View
@@ -304,7 +327,7 @@ export const AddEditRecordScreen: React.FC = () => {
           </Pressable>
 
           <Pressable
-            onPress={() => navigation.goBack()}
+            onPress={closeOrReset}
             disabled={submitting}
             style={({ pressed }) => [
               styles.cancelButton,
@@ -326,7 +349,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.lg,
-    paddingBottom: SPACING.xxl,
     gap: SPACING.lg,
   },
   formCard: {

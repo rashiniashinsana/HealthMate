@@ -13,6 +13,21 @@ const MONTHS_SHORT = [
   'Dec',
 ];
 
+const MONTHS_LONG = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
 const WEEKDAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /**
@@ -94,6 +109,15 @@ export function formatDisplayDate(isoDate: string): string {
   const month = MONTHS_SHORT[parsed.getMonth()];
   const year = parsed.getFullYear();
   return `${weekday}, ${day} ${month} ${year}`;
+}
+
+export function formatLongDate(isoDate: string): string {
+  const parsed = parseISODate(isoDate);
+  if (!parsed) {
+    return isoDate;
+  }
+
+  return `${parsed.getDate()} ${MONTHS_LONG[parsed.getMonth()]} ${parsed.getFullYear()}`;
 }
 
 /**

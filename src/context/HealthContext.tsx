@@ -1,49 +1,61 @@
 import React, {
   createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
 import {
-  addQuickWater,
+  clearAllRecords,
   deleteRecord,
   getAllRecords,
-  getRecordByDate,
-  getTodaySummary,
-  getWeeklyStats,
+  getRecordsByDate,
   initDatabase,
   insertRecord,
+  resetSampleData,
   updateRecord,
+} from '../database/db';
+import {
+  addQuickWater,
+  getTodaySummary,
+  getWeeklyStats,
 } from '../database/healthRepository';
 import {
-  DailySummary,
-  HealthRecord,
-  HealthRecordInput,
+  DailySummary as ExtendedDailySummary,
   WeeklyStats,
 } from '../models/HealthRecord';
+import { HealthRecord, NewHealthRecordInput } from '../types/health';
 import { QUICK_WATER_INCREMENT_ML } from '../utils/constants';
 import { getTodayISO } from '../utils/dateUtils';
+import {
+  hasValidationErrors,
+  validateHealthForm,
+} from '../utils/validation';
 
-interface HealthContextValue {
+export interface HealthContextValue {
   records: HealthRecord[];
-  todaySummary: DailySummary;
+  todaySummary: ExtendedDailySummary;
   weeklyStats: WeeklyStats;
+  isInitialized: boolean;
+  isLoading: boolean;
   loading: boolean;
   error: string | null;
   selectedDateFilter: string | null;
-  addRecord: (input: HealthRecordInput) => Promise<void>;
-  editRecord: (id: number, input: HealthRecordInput) => Promise<void>;
-  removeRecord: (id: number) => Promise<void>;
+  refreshData: () => Promise<void>;
   refreshRecords: () => Promise<void>;
+  addRecord: (entry: NewHealthRecordInput) => Promise<void>;
+  editRecord: (id: number, entry: NewHealthRecordInput) => Promise<void>;
+  removeRecord: (id: number) => Promise<void>;
   filterByDate: (date: string | null) => Promise<void>;
-  quickLogWater: (amountMl?: number) => Promise<void>;
+  quickAddWater: (amount?: number) => Promise<void>;
+  quickLogWater: (amount?: number) => Promise<void>;
+  clearAllData: () => Promise<void>;
+  resetToSampleData: () => Promise<void>;
   clearError: () => void;
 }
 
-const DEFAULT_SUMMARY: DailySummary = {
+const DEFAULT_SUMMARY: ExtendedDailySummary = {
   date: getTodayISO(),
   totalSteps: 0,
   totalCalories: 0,
@@ -61,28 +73,45 @@ const DEFAULT_WEEKLY_STATS: WeeklyStats = {
   totalWater: 0,
 };
 
-const HealthContext = createContext<HealthContextValue | undefined>(undefined);
+export const HealthContext = createContext<HealthContextValue | undefined>(
+  undefined
+);
+
+function assertValidEntry(entry: NewHealthRecordInput): void {
+  const errors = validateHealthForm({
+    date: entry.date,
+    steps: String(entry.steps),
+    calories: String(entry.calories),
+    water: String(entry.water),
+  });
+  if (hasValidationErrors(errors)) {
+    const firstError = Object.values(errors).find(Boolean);
+    throw new Error(firstError ?? 'Invalid health record input.');
+  }
+}
 
 export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [records, setRecords] = useState<HealthRecord[]>([]);
   const [todaySummary, setTodaySummary] =
-    useState<DailySummary>(DEFAULT_SUMMARY);
+    useState<ExtendedDailySummary>(DEFAULT_SUMMARY);
   const [weeklyStats, setWeeklyStats] =
     useState<WeeklyStats>(DEFAULT_WEEKLY_STATS);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(
     null
   );
 
+  // Track active filter in a ref so mutations refresh the currently filtered view.
   const activeFilterRef = useRef<string | null>(null);
   activeFilterRef.current = selectedDateFilter;
 
-  const loadData = useCallback(async (filterDate: string | null) => {
+  const loadSnapshot = useCallback(async (filterDate: string | null) => {
     const [fetchedRecords, summary, weekly] = await Promise.all([
-      filterDate ? getRecordByDate(filterDate) : getAllRecords(),
+      filterDate ? getRecordsByDate(filterDate) : getAllRecords(),
       getTodaySummary(),
       getWeeklyStats(),
     ]);
@@ -95,11 +124,11 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
     let mounted = true;
     (async () => {
       try {
-        setLoading(true);
+        setIsLoading(true);
         setError(null);
         await initDatabase();
         if (mounted) {
-          await loadData(null);
+          await loadSnapshot(null);
         }
       } catch (err) {
         if (mounted) {
@@ -111,7 +140,8 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       } finally {
         if (mounted) {
-          setLoading(false);
+          setIsLoading(false);
+          setIsInitialized(true);
         }
       }
     })();
@@ -119,47 +149,48 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       mounted = false;
     };
-  }, [loadData]);
+  }, [loadSnapshot]);
 
-  const refreshRecords = useCallback(async () => {
+  const refreshData = useCallback(async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       setError(null);
-      await loadData(activeFilterRef.current);
+      await loadSnapshot(activeFilterRef.current);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to refresh records.'
+        err instanceof Error ? err.message : 'Failed to refresh health data.'
       );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  }, [loadData]);
+  }, [loadSnapshot]);
 
   const filterByDate = useCallback(
     async (date: string | null) => {
       const normalized = date && date.trim().length > 0 ? date.trim() : null;
       try {
-        setLoading(true);
+        setIsLoading(true);
         setError(null);
         setSelectedDateFilter(normalized);
-        await loadData(normalized);
+        await loadSnapshot(normalized);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Failed to filter records.'
         );
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     },
-    [loadData]
+    [loadSnapshot]
   );
 
   const addRecord = useCallback(
-    async (input: HealthRecordInput) => {
+    async (entry: NewHealthRecordInput) => {
       try {
         setError(null);
-        await insertRecord(input);
-        await loadData(activeFilterRef.current);
+        assertValidEntry(entry);
+        await insertRecord(entry);
+        await loadSnapshot(activeFilterRef.current);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Failed to save record.';
@@ -167,15 +198,16 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw err;
       }
     },
-    [loadData]
+    [loadSnapshot]
   );
 
   const editRecord = useCallback(
-    async (id: number, input: HealthRecordInput) => {
+    async (id: number, entry: NewHealthRecordInput) => {
       try {
         setError(null);
-        await updateRecord(id, input);
-        await loadData(activeFilterRef.current);
+        assertValidEntry(entry);
+        await updateRecord(id, entry);
+        await loadSnapshot(activeFilterRef.current);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Failed to update record.';
@@ -183,7 +215,7 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw err;
       }
     },
-    [loadData]
+    [loadSnapshot]
   );
 
   const removeRecord = useCallback(
@@ -191,7 +223,7 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         setError(null);
         await deleteRecord(id);
-        await loadData(activeFilterRef.current);
+        await loadSnapshot(activeFilterRef.current);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete record.';
@@ -199,15 +231,18 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw err;
       }
     },
-    [loadData]
+    [loadSnapshot]
   );
 
-  const quickLogWater = useCallback(
-    async (amountMl: number = QUICK_WATER_INCREMENT_ML) => {
+  const quickAddWater = useCallback(
+    async (amount: number = QUICK_WATER_INCREMENT_ML) => {
       try {
         setError(null);
-        await addQuickWater(amountMl);
-        await loadData(activeFilterRef.current);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          throw new Error('Water increment must be a positive amount.');
+        }
+        await addQuickWater(amount);
+        await loadSnapshot(activeFilterRef.current);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Failed to log water intake.';
@@ -215,8 +250,42 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw err;
       }
     },
-    [loadData]
+    [loadSnapshot]
   );
+
+  const clearAllData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setSelectedDateFilter(null);
+      await clearAllRecords();
+      await loadSnapshot(null);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to clear health records.';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadSnapshot]);
+
+  const resetToSampleData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setSelectedDateFilter(null);
+      await resetSampleData();
+      await loadSnapshot(null);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to reset sample data.';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadSnapshot]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -227,30 +296,39 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
       records,
       todaySummary,
       weeklyStats,
-      loading,
+      isInitialized,
+      isLoading,
+      loading: isLoading,
       error,
       selectedDateFilter,
+      refreshData,
+      refreshRecords: refreshData,
       addRecord,
       editRecord,
       removeRecord,
-      refreshRecords,
       filterByDate,
-      quickLogWater,
+      quickAddWater,
+      quickLogWater: quickAddWater,
+      clearAllData,
+      resetToSampleData,
       clearError,
     }),
     [
       records,
       todaySummary,
       weeklyStats,
-      loading,
+      isInitialized,
+      isLoading,
       error,
       selectedDateFilter,
+      refreshData,
       addRecord,
       editRecord,
       removeRecord,
-      refreshRecords,
       filterByDate,
-      quickLogWater,
+      quickAddWater,
+      clearAllData,
+      resetToSampleData,
       clearError,
     ]
   );
@@ -260,13 +338,4 @@ export const HealthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-/**
- * Custom hook to access HealthMate state and database actions.
- */
-export function useHealth(): HealthContextValue {
-  const ctx = useContext(HealthContext);
-  if (!ctx) {
-    throw new Error('useHealth must be used within a HealthProvider.');
-  }
-  return ctx;
-}
+export { useHealth } from '../hooks/useHealth';

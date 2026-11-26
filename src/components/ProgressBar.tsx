@@ -1,9 +1,8 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { COLORS, RADII } from '../utils/constants';
 
 interface ProgressBarProps {
-  /** Normalized progress from 0 to 1 (values > 1 are clamped visually). */
   progress: number;
   color: string;
   trackColor?: string;
@@ -17,15 +16,29 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   height = 8,
 }) => {
   const clamped = Math.max(0, Math.min(1, progress));
-  const widthPercent = `${Math.round(clamped * 100)}%` as `${number}%`;
+  const animatedValue = useRef(new Animated.Value(clamped)).current;
+
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: clamped,
+      duration: 450,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [animatedValue, clamped]);
+
+  const widthInterpolated = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
 
   return (
     <View style={[styles.track, { backgroundColor: trackColor, height }]}>
-      <View
+      <Animated.View
         style={[
           styles.fill,
           {
-            width: widthPercent,
+            width: widthInterpolated,
             backgroundColor: color,
             height,
           },

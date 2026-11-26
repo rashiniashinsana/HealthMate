@@ -1,17 +1,17 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { HealthRecord } from '../models/HealthRecord';
 import { AddEditRecordScreen } from '../screens/AddEditRecordScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { RecordListScreen } from '../screens/RecordListScreen';
+import { HealthRecord } from '../types/health';
 import { COLORS } from '../utils/constants';
 
 export type MainTabParamList = {
   Dashboard: undefined;
   Records: undefined;
+  AddRecord: undefined;
 };
 
 export type RootStackParamList = {
@@ -58,9 +58,18 @@ const MainTabs: React.FC = () => {
               />
             );
           }
+          if (route.name === 'Records') {
+            return (
+              <MaterialCommunityIcons
+                name={focused ? 'clipboard-list' : 'clipboard-list-outline'}
+                size={size}
+                color={color}
+              />
+            );
+          }
           return (
             <MaterialCommunityIcons
-              name={focused ? 'clipboard-text' : 'clipboard-text-outline'}
+              name={focused ? 'plus-circle' : 'plus-circle-outline'}
               size={size}
               color={color}
             />
@@ -76,44 +85,50 @@ const MainTabs: React.FC = () => {
       <Tab.Screen
         name="Records"
         component={RecordListScreen}
-        options={{ title: 'Health History' }}
+        options={{ title: 'Records' }}
+      />
+      <Tab.Screen
+        name="AddRecord"
+        component={AddEditRecordScreen}
+        options={{ title: 'Add Record' }}
       />
     </Tab.Navigator>
   );
 };
 
+/**
+ * Root stack hosts the 3-tab shell and presents AddEditRecord modally for edits and FAB actions.
+ */
 export const AppNavigator: React.FC = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: COLORS.surface,
-          },
-          headerTintColor: COLORS.primary,
-          headerTitleStyle: {
-            fontWeight: '700',
-            color: COLORS.textPrimary,
-          },
-          headerShadowVisible: false,
-        }}
-      >
-        <Stack.Screen
-          name="MainTabs"
-          component={MainTabs}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="AddEditRecord"
-          component={AddEditRecordScreen}
-          options={({ route }) => ({
-            presentation: 'modal',
-            title: route.params?.record
-              ? 'Edit Health Record'
-              : 'Log Health Record',
-          })}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: COLORS.surface,
+        },
+        headerTintColor: COLORS.primary,
+        headerTitleStyle: {
+          fontWeight: '700',
+          color: COLORS.textPrimary,
+        },
+        headerShadowVisible: false,
+      }}
+    >
+      <Stack.Screen
+        name="MainTabs"
+        component={MainTabs}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AddEditRecord"
+        component={AddEditRecordScreen}
+        options={({ route }) => ({
+          presentation: 'modal',
+          title: route.params?.record
+            ? 'Edit Health Record'
+            : 'Log Health Record',
+        })}
+      />
+    </Stack.Navigator>
   );
 };

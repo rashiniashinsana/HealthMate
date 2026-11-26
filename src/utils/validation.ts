@@ -2,13 +2,10 @@ import { HealthFormErrors, HealthFormValues } from '../models/HealthRecord';
 import { VALIDATION_LIMITS } from './constants';
 import { getTodayISO, isValidISODate } from './dateUtils';
 
-/**
- * Validates a single positive integer field against an exclusive upper bound.
- */
 function validatePositiveInt(
   rawValue: string,
   label: string,
-  maxExclusive: number,
+  maxInclusive: number,
   unit: string = ''
 ): string | undefined {
   const trimmed = rawValue.trim();
@@ -16,8 +13,12 @@ function validatePositiveInt(
     return `${label} is required.`;
   }
 
+  if (trimmed.startsWith('-')) {
+    return `${label} cannot be negative.`;
+  }
+
   if (!/^\d+$/.test(trimmed)) {
-    return `${label} must be a whole positive number.`;
+    return `${label} must contain whole numbers only.`;
   }
 
   const numeric = Number(trimmed);
@@ -25,18 +26,15 @@ function validatePositiveInt(
     return `${label} must be greater than 0.`;
   }
 
-  if (numeric >= maxExclusive) {
-    const formattedMax = maxExclusive.toLocaleString();
+  if (numeric > maxInclusive) {
+    const formattedMax = maxInclusive.toLocaleString();
     const suffix = unit ? ` ${unit}` : '';
-    return `${label} must be less than ${formattedMax}${suffix}.`;
+    return `${label} must be ${formattedMax}${suffix} or less.`;
   }
 
   return undefined;
 }
 
-/**
- * Validates all fields of the Add / Edit Health Record form.
- */
 export function validateHealthForm(values: HealthFormValues): HealthFormErrors {
   const errors: HealthFormErrors = {};
 
@@ -81,9 +79,6 @@ export function validateHealthForm(values: HealthFormValues): HealthFormErrors {
   return errors;
 }
 
-/**
- * Returns `true` if the error map contains at least one validation message.
- */
 export function hasValidationErrors(errors: HealthFormErrors): boolean {
   return Object.values(errors).some((msg) => Boolean(msg));
 }

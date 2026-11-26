@@ -130,3 +130,26 @@ export async function getTodaySummary(
     totalWater: row?.totalWater ?? 0,
   };
 }
+
+export async function clearAllRecords(): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('DELETE FROM health_records;');
+}
+
+export async function resetSampleData(): Promise<void> {
+  const db = await getDatabase();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM health_records;');
+    for (const entry of SEED_RECORDS) {
+      await db.runAsync(
+        'INSERT INTO health_records (date, steps, calories, water) VALUES (?, ?, ?, ?);',
+        [
+          getOffsetDateISO(entry.offsetDays),
+          entry.steps,
+          entry.calories,
+          entry.water,
+        ]
+      );
+    }
+  });
+}
