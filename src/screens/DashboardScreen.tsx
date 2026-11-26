@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BmiCalculatorModal } from '../components/BmiCalculatorModal';
 import { MetricCard } from '../components/MetricCard';
 import { WeeklyTrendChart } from '../components/WeeklyTrendChart';
 import { serializeRecords } from '../database/healthRepository';
@@ -64,6 +65,7 @@ export const DashboardScreen: React.FC = () => {
 
   const [exporting, setExporting] = useState(false);
   const [trendsExpanded, setTrendsExpanded] = useState(true);
+  const [bmiModalVisible, setBmiModalVisible] = useState(false);
   const [goalsModalVisible, setGoalsModalVisible] = useState(false);
   const [goalInputs, setGoalInputs] = useState({
     stepGoal: String(goals.stepGoal),
@@ -268,6 +270,21 @@ export const DashboardScreen: React.FC = () => {
                 {todaySummary.recordCount === 1 ? 'entry' : 'entries'}
               </Text>
             </View>
+            <Pressable
+              onPress={() => setBmiModalVisible(true)}
+              style={({ pressed }) => [
+                styles.editGoalsBtn,
+                pressed && styles.pressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Open BMI and Baseline Calculator"
+            >
+              <MaterialCommunityIcons
+                name="calculator-variant-outline"
+                size={18}
+                color={COLORS.textOnPrimary}
+              />
+            </Pressable>
             <Pressable
               onPress={openGoalsModal}
               style={({ pressed }) => [
@@ -597,6 +614,11 @@ export const DashboardScreen: React.FC = () => {
           color={COLORS.textOnPrimary}
         />
       </Pressable>
+
+      <BmiCalculatorModal
+        visible={bmiModalVisible}
+        onClose={() => setBmiModalVisible(false)}
+      />
 
       <Modal
         visible={goalsModalVisible}
